@@ -141,11 +141,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-sans);font-si
 <script type="text/babel">
 const {useState,useEffect,useCallback,useRef} = React;
 
-// ── API Configuration ─────────────────────────────────────────
-// HARDCODED: points directly to your Render backend
 const API_BASE = 'https://umbra-backend-phmm.onrender.com';
 
-// ── API Client ───────────────────────────────────────────────
 const api = {
   async get(path) {
     const r = await fetch(`${API_BASE}${path}`, {
@@ -160,14 +157,13 @@ const api = {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(90000),
     });
     if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
     return r.json();
   },
 };
 
-// ── Mock data (shown when API is unavailable / cold-starting) ─
 const MOCK = {
   clients: [
     {id:'a1000000-0000-0000-0000-000000000001',name:'Apex Financial Services',industry:'Financial Services',geography:'North America',tier:'enterprise'},
@@ -216,34 +212,34 @@ const MOCK = {
   },
   gaps: {
     'a1000000-0000-0000-0000-000000000001': [
-      {id:'g001',technique_id:'T1059.001',technique_name:'PowerShell',tactic:'execution',gap_type:'broken_rule',severity:'critical',priority_score:92,coverage_state:'BROKEN',coverage_illusion:true,title:'T1059.001 — PowerShell: Coverage Illusion',description:'Rules B+C deployed but powershell_logs not ingested — cannot fire. Rule A catches only process creation; misses all encoded/in-memory execution.',missing_sources:['powershell_logs','network_flow'],affected_rules:['RULE-T1059-001-A','RULE-T1059-001-B','RULE-T1059-001-C'],attacker_path:'Adversary uses PowerShell with -EncodedCommand executing a Base64-encoded download cradle. Script Block Logging is absent — zero execution content captured. RULE-T1059-001-B silently fails; only process creation (benign-looking powershell.exe) is visible. Attacker stages Cobalt Strike beacon via Invoke-Expression with string concatenation, bypassing all keyword detection.',detection_failure:'RULE-T1059-001-B requires powershell_logs (HARD) and network_flow (HARD). Neither ingested. Rule shows "deployed" — this is the Coverage Illusion. RULE-T1059-001-A (process_creation only) misses encoded and in-memory execution entirely.',estimated_dwell_time:'21–60 days — Encoded PS without Script Block Logging is effectively silent. Mean detection time in similar stacks: 34 days.',business_impact:'Apex processes $2B+ daily transactions. Undetected PS staging enables AD recon (BloodHound), credential dumping, and full domain compromise. SOX/PCI-DSS exposure if breach exceeds 72 hours undiscovered.'},
-      {id:'g002',technique_id:'T1003.001',technique_name:'LSASS Memory',tactic:'credential_access',gap_type:'broken_rule',severity:'critical',priority_score:90,coverage_state:'BROKEN',coverage_illusion:true,title:'T1003.001 — LSASS: Credential Dumping Undetectable',description:'process_access source deployed but OFFLINE. LSASS rules appear active. Zero process access events reach SIEM.',missing_sources:['process_access'],affected_rules:['RULE-T1003-001-A','RULE-T1003-001-C'],attacker_path:'Post-initial-access, attacker runs custom LSASS dumper on a domain-joined workstation. Sysmon EventID 10 (ProcessAccess) configured but source is offline — zero events flowing. RULE-T1003-001-A cannot evaluate PROCESS_VM_READ access. NTLM hashes and Kerberos tickets extracted in 4 minutes. Pass-the-hash enables domain lateral movement.',detection_failure:'process_access health=offline. Coverage matrix marks LSASS rules as BUILT — this is the Coverage Illusion. Zero process access events reaching SIEM. Attacker has unrestricted credential dumping freedom.',estimated_dwell_time:'7–21 days — Once NTLM hashes obtained, domain admin typically achieved within hours. Without credential telemetry, lateral movement chain invisible.',business_impact:'Domain credential compromise at FS firm threatens trading systems, SWIFT infrastructure, and customer PII. Full domain compromise → $15M–$50M IR + PCI-DSS/SOX penalties.'},
-      {id:'g003',technique_id:'T1021.001',technique_name:'Remote Desktop Protocol',tactic:'lateral_movement',gap_type:'broken_rule',severity:'high',priority_score:82,coverage_state:'BROKEN',coverage_illusion:true,title:'T1021.001 — RDP Chain Rule Broken: network_flow Missing',description:'RULE-T1021-001-B (chain rule) requires network_flow (HARD). Absent. Chain correlation silently fails.',missing_sources:['network_flow'],affected_rules:['RULE-T1021-001-A','RULE-T1021-001-B'],attacker_path:'Using harvested domain credentials, attacker initiates RDP to jump servers and DCs. RULE-T1021-001-A only detects non-admin source hosts via EventID 4624 — attacker uses admin creds, bypassing this heuristic. RULE-T1021-001-B (chain rule) is BROKEN — network_flow absent. Each RDP hop invisible.',detection_failure:'Chain rule requires network_flow correlation. Without it, port-3389 destination patterns cannot be evaluated. Single-source detection misses privileged RDP. Full lateral movement path undetected.',estimated_dwell_time:'3–14 days — Lateral movement phase spans days to weeks before ransomware/exfil stage.',business_impact:'RDP to DCs enables NTDS.dit dump (all domain creds), persistence deployment, and ransomware staging. Business continuity risk is severe.'},
-      {id:'g004',technique_id:'T1041',technique_name:'Exfiltration Over C2 Channel',tactic:'exfiltration',gap_type:'visibility_gap',severity:'high',priority_score:75,coverage_state:'GAP',coverage_illusion:false,title:'T1041 — Exfiltration: Complete Blind Spot',description:'Zero rules deployed. network_flow and proxy_logs not ingested. No telemetry for detection or forensics.',missing_sources:['network_flow','proxy_logs'],affected_rules:[],attacker_path:'Attacker exfiltrates via chunked HTTPS POSTs to CDN-fronted C2. Without proxy_logs or network_flow, zero visibility into outbound volume or destination reputation. Large transfers blend into normal business traffic. Data exfiltrated at will.',detection_failure:'No rules deployed for T1041. Even if deployed, both required sources absent. Complete visibility gap — no telemetry, no detection, no retrospective forensics possible.',estimated_dwell_time:'Indeterminate — exfiltration may have started prior to engagement. Without historical network telemetry, reconstruction impossible.',business_impact:'Undetected exfil from FS firm could mean customer PII, trading strategies, M&A data in attacker hands. PCI-DSS notification at 5,000 cardholder records. SOX audit implications.'},
-      {id:'g005',technique_id:'T1078.002',technique_name:'Domain Accounts',tactic:'persistence',gap_type:'partial_coverage',severity:'high',priority_score:68,coverage_state:'PARTIAL',coverage_illusion:false,title:'T1078.002 — Domain Accounts: Correlation Rule Degraded',description:'RULE-T1078-002-B (correlation) requires network_flow (HARD). Without it, domain account lateral movement correlation is single-source only.',missing_sources:['network_flow'],affected_rules:['RULE-T1078-002-A','RULE-T1078-002-B'],attacker_path:'Attacker with compromised domain creds uses valid account for persistence. RULE-T1078-002-A (off-hours) catches obvious patterns but misses business-hours access. Correlation rule non-functional without network_flow — lateral movement via valid account undetected.',detection_failure:'Partial coverage. Single-source rule catches obvious abuse (off-hours, impossible travel) but misses nuanced usage. Correlation rule degraded without network_flow.',estimated_dwell_time:'30–90 days — Valid account abuse has highest average dwell time of any technique category.',business_impact:'Domain account persistence is foundation for all subsequent attack phases. Attacker with persistent access can wait, learn environment, and strike at chosen time.'},
+      {id:'g001',technique_id:'T1059.001',technique_name:'PowerShell',tactic:'execution',gap_type:'broken_rule',severity:'critical',priority_score:92,coverage_state:'BROKEN',coverage_illusion:true,title:'T1059.001 — PowerShell: Coverage Illusion',description:'Rules B+C deployed but powershell_logs not ingested — cannot fire.',missing_sources:['powershell_logs','network_flow'],affected_rules:['RULE-T1059-001-A','RULE-T1059-001-B','RULE-T1059-001-C'],attacker_path:'Adversary uses PowerShell with -EncodedCommand executing a Base64-encoded download cradle. Script Block Logging is absent — zero execution content captured. RULE-T1059-001-B silently fails; only process creation (benign-looking powershell.exe) is visible. Attacker stages Cobalt Strike beacon via Invoke-Expression with string concatenation, bypassing all keyword detection.',detection_failure:'RULE-T1059-001-B requires powershell_logs (HARD) and network_flow (HARD). Neither ingested. Rule shows "deployed" — this is the Coverage Illusion.',estimated_dwell_time:'21–60 days',business_impact:'Apex processes $2B+ daily transactions. Undetected PS staging enables AD recon, credential dumping, and full domain compromise.'},
+      {id:'g002',technique_id:'T1003.001',technique_name:'LSASS Memory',tactic:'credential_access',gap_type:'broken_rule',severity:'critical',priority_score:90,coverage_state:'BROKEN',coverage_illusion:true,title:'T1003.001 — LSASS: Credential Dumping Undetectable',description:'process_access source deployed but OFFLINE. LSASS rules appear active. Zero process access events reach SIEM.',missing_sources:['process_access'],affected_rules:['RULE-T1003-001-A','RULE-T1003-001-C'],attacker_path:'Post-initial-access, attacker runs custom LSASS dumper on a domain-joined workstation. Sysmon EventID 10 (ProcessAccess) configured but source is offline. NTLM hashes and Kerberos tickets extracted in 4 minutes.',detection_failure:'process_access health=offline. Coverage matrix marks LSASS rules as BUILT — this is the Coverage Illusion.',estimated_dwell_time:'7–21 days',business_impact:'Domain credential compromise at FS firm threatens trading systems, SWIFT infrastructure, and customer PII.'},
+      {id:'g003',technique_id:'T1021.001',technique_name:'Remote Desktop Protocol',tactic:'lateral_movement',gap_type:'broken_rule',severity:'high',priority_score:82,coverage_state:'BROKEN',coverage_illusion:true,title:'T1021.001 — RDP Chain Rule Broken',description:'RULE-T1021-001-B (chain rule) requires network_flow (HARD). Absent.',missing_sources:['network_flow'],affected_rules:['RULE-T1021-001-A','RULE-T1021-001-B'],attacker_path:'Using harvested domain credentials, attacker initiates RDP to jump servers and DCs. Chain rule broken — each RDP hop invisible.',detection_failure:'Chain rule requires network_flow correlation. Without it, port-3389 destination patterns cannot be evaluated.',estimated_dwell_time:'3–14 days',business_impact:'RDP to DCs enables NTDS.dit dump, persistence deployment, and ransomware staging.'},
+      {id:'g004',technique_id:'T1041',technique_name:'Exfiltration Over C2 Channel',tactic:'exfiltration',gap_type:'visibility_gap',severity:'high',priority_score:75,coverage_state:'GAP',coverage_illusion:false,title:'T1041 — Exfiltration: Complete Blind Spot',description:'Zero rules deployed. network_flow and proxy_logs not ingested.',missing_sources:['network_flow','proxy_logs'],affected_rules:[],attacker_path:'Attacker exfiltrates via chunked HTTPS POSTs to CDN-fronted C2. Without proxy_logs or network_flow, zero visibility into outbound volume.',detection_failure:'No rules deployed for T1041. Both required sources absent. Complete visibility gap.',estimated_dwell_time:'Indeterminate',business_impact:'Undetected exfil could mean customer PII, trading strategies, M&A data in attacker hands.'},
+      {id:'g005',technique_id:'T1078.002',technique_name:'Domain Accounts',tactic:'persistence',gap_type:'partial_coverage',severity:'high',priority_score:68,coverage_state:'PARTIAL',coverage_illusion:false,title:'T1078.002 — Domain Accounts: Correlation Rule Degraded',description:'RULE-T1078-002-B requires network_flow (HARD). Without it, correlation is single-source only.',missing_sources:['network_flow'],affected_rules:['RULE-T1078-002-A','RULE-T1078-002-B'],attacker_path:'Attacker with compromised domain creds uses valid account for persistence. Correlation rule non-functional without network_flow.',detection_failure:'Partial coverage. Single-source rule catches obvious abuse but misses nuanced usage.',estimated_dwell_time:'30–90 days',business_impact:'Domain account persistence is foundation for all subsequent attack phases.'},
     ],
     'a1000000-0000-0000-0000-000000000002': [
-      {id:'g006',technique_id:'T1059.001',technique_name:'PowerShell',tactic:'execution',gap_type:'detection_gap',severity:'critical',priority_score:85,coverage_state:'GAP',coverage_illusion:false,title:'T1059.001 — PowerShell: No Coverage (No EDR)',description:'Zero rules deployed. No EDR, no process_creation, no powershell_logs. Complete blind spot.',missing_sources:['edr_telemetry','process_creation','powershell_logs'],affected_rules:[],attacker_path:'NovaMed has no EDR deployed. Attacker executes PowerShell freely — no process telemetry, no script block logging. Living-off-the-land via PowerShell is completely invisible.',detection_failure:'No rules, no sources. Pure detection gap. NovaMed lacks the fundamental endpoint telemetry required for any PS-based detection.',estimated_dwell_time:'45–90 days — Healthcare environments without EDR have extended dwell. Average 68 days per MITRE data.',business_impact:'PHI exfiltration risk (HIPAA breach). Ransomware targeting clinical systems threatens patient safety and operational continuity.'},
-      {id:'g007',technique_id:'T1003.001',technique_name:'LSASS Memory',tactic:'credential_access',gap_type:'visibility_gap',severity:'critical',priority_score:88,coverage_state:'GAP',coverage_illusion:false,title:'T1003.001 — LSASS: No EDR = No Credential Visibility',description:'No EDR at NovaMed. All credential dumping techniques are complete blind spots.',missing_sources:['edr_telemetry','process_access'],affected_rules:[],attacker_path:'Attacker dumps LSASS on any domain-joined endpoint at NovaMed. Without EDR or Sysmon, zero process access events generated. All credential dumping is completely undetected.',detection_failure:'Requires process_access (Sysmon EID10) or edr_telemetry. Neither present. Visibility gap — the telemetry layer does not exist.',estimated_dwell_time:'14–30 days — LSASS dumping typically precedes ransomware by 2–4 weeks in healthcare incidents.',business_impact:'Domain credential compromise at healthcare provider threatens EMR/EHR systems, medical device networks, and patient safety systems. HIPAA breach notification obligations.'},
+      {id:'g006',technique_id:'T1059.001',technique_name:'PowerShell',tactic:'execution',gap_type:'detection_gap',severity:'critical',priority_score:85,coverage_state:'GAP',coverage_illusion:false,title:'T1059.001 — PowerShell: No Coverage (No EDR)',description:'Zero rules deployed. No EDR, no process_creation, no powershell_logs.',missing_sources:['edr_telemetry','process_creation','powershell_logs'],affected_rules:[],attacker_path:'NovaMed has no EDR deployed. Attacker executes PowerShell freely — completely invisible.',detection_failure:'No rules, no sources. Pure detection gap.',estimated_dwell_time:'45–90 days',business_impact:'PHI exfiltration risk (HIPAA breach). Ransomware targeting clinical systems threatens patient safety.'},
+      {id:'g007',technique_id:'T1003.001',technique_name:'LSASS Memory',tactic:'credential_access',gap_type:'visibility_gap',severity:'critical',priority_score:88,coverage_state:'GAP',coverage_illusion:false,title:'T1003.001 — LSASS: No EDR = No Credential Visibility',description:'No EDR at NovaMed. All credential dumping is a complete blind spot.',missing_sources:['edr_telemetry','process_access'],affected_rules:[],attacker_path:'Attacker dumps LSASS on any domain-joined endpoint. Without EDR or Sysmon, zero process access events generated.',detection_failure:'Requires process_access (Sysmon EID10) or edr_telemetry. Neither present.',estimated_dwell_time:'14–30 days',business_impact:'Domain credential compromise at healthcare provider threatens EMR/EHR systems and patient safety.'},
     ],
     'a1000000-0000-0000-0000-000000000003': [
-      {id:'g008',technique_id:'T1562.001',technique_name:'Disable/Modify Tools',tactic:'defense_evasion',gap_type:'detection_gap',severity:'critical',priority_score:90,coverage_state:'GAP',coverage_illusion:false,title:'T1562.001 — Disable AV/EDR: Complete Gap (OT Environment)',description:'No EDR at CoreGrid. No rules deployed. AV/EDR disabling — standard precursor to OT attacks — undetectable.',missing_sources:['edr_telemetry','windows_event_logs'],affected_rules:[],attacker_path:'Adversary targeting CoreGrid OT environment disables endpoint protection as first step. Without EDR, the termination of security tools generates zero alerts. Attacker proceeds to OT network pivot unimpeded.',detection_failure:'Requires edr_telemetry (HARD). Not present in CoreGrid. No windows_event_logs either. Complete visibility gap for defense evasion.',estimated_dwell_time:'30–60 days — OT-targeted attacks typically have longest dwell time. Attackers may wait months after initial access before disruption.',business_impact:'Grid disruption events at energy utility have cascading infrastructure impact. NERC-CIP regulatory exposure. Potential physical safety risk if OT safety systems are reached.'},
+      {id:'g008',technique_id:'T1562.001',technique_name:'Disable/Modify Tools',tactic:'defense_evasion',gap_type:'detection_gap',severity:'critical',priority_score:90,coverage_state:'GAP',coverage_illusion:false,title:'T1562.001 — Disable AV/EDR: Complete Gap (OT Environment)',description:'No EDR at CoreGrid. No rules deployed. AV/EDR disabling is undetectable.',missing_sources:['edr_telemetry','windows_event_logs'],affected_rules:[],attacker_path:'Adversary targeting CoreGrid OT environment disables endpoint protection as first step. Attacker proceeds to OT network pivot unimpeded.',detection_failure:'Requires edr_telemetry (HARD). Not present. Complete visibility gap for defense evasion.',estimated_dwell_time:'30–60 days',business_impact:'Grid disruption events have cascading infrastructure impact. NERC-CIP regulatory exposure.'},
     ],
   },
   recommendations: {
     'a1000000-0000-0000-0000-000000000001': [
-      {source_key:'powershell_logs',source_name:'PowerShell Script Block Logging',category:'endpoint',setup_complexity:'medium',techniques_unlocked:1,rules_activated:3,detection_improvement:28,estimated_monthly_cost:315,estimated_annual_cost:3780,roi_score:97,priority_rank:1,technique_ids:['T1059.001'],description:'Closes T1059.001 Coverage Illusion. Activates 3 rules including download cradle correlation. Extremely high ROI — $315/month resolves a critical blind spot.'},
-      {source_key:'process_access',source_name:'Process Access Events (Sysmon EID10)',category:'endpoint',setup_complexity:'medium',techniques_unlocked:2,rules_activated:3,detection_improvement:22,estimated_monthly_cost:63,estimated_annual_cost:756,roi_score:91,priority_rank:2,technique_ids:['T1003.001','T1055.001'],description:'Fixes the LSASS Coverage Illusion (source configured but offline). Resolves credential dumping and DLL injection blind spots. Fix, not new ingestion.'},
-      {source_key:'network_flow',source_name:'Network Flow / NetFlow / IPFIX',category:'network',setup_complexity:'high',techniques_unlocked:6,rules_activated:7,detection_improvement:42,estimated_monthly_cost:4320,estimated_annual_cost:51840,roi_score:89,priority_rank:3,technique_ids:['T1041','T1071.001','T1071.004','T1021.001','T1048','T1078.002'],description:'Resolves 7 broken/missing rules across 6 high-priority techniques. Fixes RDP chain, enables DNS C2 detection, closes exfiltration blind spot.'},
-      {source_key:'dns_logs',source_name:'DNS Query Logs',category:'network',setup_complexity:'medium',techniques_unlocked:2,rules_activated:2,detection_improvement:18,estimated_monthly_cost:675,estimated_annual_cost:8100,roi_score:72,priority_rank:4,technique_ids:['T1071.004','T1048'],description:'Enables DNS C2 detection (T1071.004) and DNS tunnelling exfiltration (T1048). Medium cost, high tactic-level impact.'},
+      {source_key:'powershell_logs',source_name:'PowerShell Script Block Logging',category:'endpoint',setup_complexity:'medium',techniques_unlocked:1,rules_activated:3,detection_improvement:28,estimated_monthly_cost:315,estimated_annual_cost:3780,roi_score:97,priority_rank:1,technique_ids:['T1059.001'],description:'Closes T1059.001 Coverage Illusion. Activates 3 rules including download cradle correlation. Extremely high ROI.'},
+      {source_key:'process_access',source_name:'Process Access Events (Sysmon EID10)',category:'endpoint',setup_complexity:'medium',techniques_unlocked:2,rules_activated:3,detection_improvement:22,estimated_monthly_cost:63,estimated_annual_cost:756,roi_score:91,priority_rank:2,technique_ids:['T1003.001','T1055.001'],description:'Fixes the LSASS Coverage Illusion. Resolves credential dumping and DLL injection blind spots.'},
+      {source_key:'network_flow',source_name:'Network Flow / NetFlow / IPFIX',category:'network',setup_complexity:'high',techniques_unlocked:6,rules_activated:7,detection_improvement:42,estimated_monthly_cost:4320,estimated_annual_cost:51840,roi_score:89,priority_rank:3,technique_ids:['T1041','T1071.001','T1071.004','T1021.001','T1048','T1078.002'],description:'Resolves 7 broken/missing rules across 6 high-priority techniques.'},
+      {source_key:'dns_logs',source_name:'DNS Query Logs',category:'network',setup_complexity:'medium',techniques_unlocked:2,rules_activated:2,detection_improvement:18,estimated_monthly_cost:675,estimated_annual_cost:8100,roi_score:72,priority_rank:4,technique_ids:['T1071.004','T1048'],description:'Enables DNS C2 detection and DNS tunnelling exfiltration detection.'},
     ],
     'a1000000-0000-0000-0000-000000000002': [
-      {source_key:'edr_telemetry',source_name:'EDR Process & Memory Telemetry',category:'endpoint',setup_complexity:'medium',techniques_unlocked:8,rules_activated:12,detection_improvement:65,estimated_monthly_cost:4500,estimated_annual_cost:54000,roi_score:95,priority_rank:1,technique_ids:['T1059.001','T1003.001','T1055.001','T1562.001','T1021.001','T1566.001','T1486'],description:'NovaMed has zero EDR. This single source unlocks 12 rules across 8 critical techniques. Highest impact recommendation in portfolio.'},
-      {source_key:'process_creation',source_name:'Process Creation Events (Sysmon)',category:'endpoint',setup_complexity:'medium',techniques_unlocked:3,rules_activated:4,detection_improvement:28,estimated_monthly_cost:240,estimated_annual_cost:2880,roi_score:82,priority_rank:2,technique_ids:['T1059.001','T1059.003','T1566.001'],description:'Sysmon EID1 provides process telemetry without full EDR cost. Interim coverage while EDR deployment planned.'},
+      {source_key:'edr_telemetry',source_name:'EDR Process & Memory Telemetry',category:'endpoint',setup_complexity:'medium',techniques_unlocked:8,rules_activated:12,detection_improvement:65,estimated_monthly_cost:4500,estimated_annual_cost:54000,roi_score:95,priority_rank:1,technique_ids:['T1059.001','T1003.001','T1055.001','T1562.001'],description:'NovaMed has zero EDR. This single source unlocks 12 rules across 8 critical techniques.'},
+      {source_key:'process_creation',source_name:'Process Creation Events (Sysmon)',category:'endpoint',setup_complexity:'medium',techniques_unlocked:3,rules_activated:4,detection_improvement:28,estimated_monthly_cost:240,estimated_annual_cost:2880,roi_score:82,priority_rank:2,technique_ids:['T1059.001','T1059.003','T1566.001'],description:'Sysmon EID1 provides process telemetry without full EDR cost.'},
     ],
     'a1000000-0000-0000-0000-000000000003': [
-      {source_key:'windows_event_logs',source_name:'Windows Event Logs (All Channels)',category:'endpoint',setup_complexity:'low',techniques_unlocked:3,rules_activated:3,detection_improvement:22,estimated_monthly_cost:600,estimated_annual_cost:7200,roi_score:85,priority_rank:1,technique_ids:['T1562.001','T1562.002','T1486'],description:'Low complexity, immediate coverage uplift for defense evasion techniques. Essential baseline for any Windows environment.'},
-      {source_key:'edr_telemetry',source_name:'EDR Process & Memory Telemetry',category:'endpoint',setup_complexity:'medium',techniques_unlocked:6,rules_activated:9,detection_improvement:55,estimated_monthly_cost:5400,estimated_annual_cost:64800,roi_score:78,priority_rank:2,technique_ids:['T1059.001','T1003.001','T1055.001','T1562.001','T1566.001','T1486'],description:'Critical for CoreGrid OT — IT compromise precedes OT pivot in >90% of ICS attacks. EDR on IT layer is essential defensive control.'},
+      {source_key:'windows_event_logs',source_name:'Windows Event Logs (All Channels)',category:'endpoint',setup_complexity:'low',techniques_unlocked:3,rules_activated:3,detection_improvement:22,estimated_monthly_cost:600,estimated_annual_cost:7200,roi_score:85,priority_rank:1,technique_ids:['T1562.001','T1562.002'],description:'Low complexity, immediate coverage uplift for defense evasion techniques.'},
+      {source_key:'edr_telemetry',source_name:'EDR Process & Memory Telemetry',category:'endpoint',setup_complexity:'medium',techniques_unlocked:6,rules_activated:9,detection_improvement:55,estimated_monthly_cost:5400,estimated_annual_cost:64800,roi_score:78,priority_rank:2,technique_ids:['T1059.001','T1003.001','T1562.001'],description:'Critical for CoreGrid OT — IT compromise precedes OT pivot in >90% of ICS attacks.'},
     ],
   },
 };
@@ -315,11 +311,22 @@ function useClientData(clientId){
           api.get(`/api/gaps?client_id=${clientId}`),
           api.get(`/api/recommendations?client_id=${clientId}`),
         ]);
-        const mappedTechs = techs.map(t=>({
-          ...t, severity: t.priority_score>=85?'critical':t.priority_score>=70?'high':'medium'
-        }));
-        setData({techniques:mappedTechs, gaps, recommendations:recs});
-        setSource('api');
+        // Only use API data if we actually got results
+        if(techs && techs.length > 0) {
+          const mappedTechs = techs.map(t=>({
+            ...t, severity: t.priority_score>=85?'critical':t.priority_score>=70?'high':'medium'
+          }));
+          setData({techniques:mappedTechs, gaps: gaps||[], recommendations:recs||[]});
+          setSource('api');
+        } else {
+          // API returned empty - use mock
+          setData({
+            techniques: MOCK.techniques[clientId]||[],
+            gaps: MOCK.gaps[clientId]||[],
+            recommendations: MOCK.recommendations[clientId]||[],
+          });
+          setSource('mock');
+        }
       }catch(e){
         setData({
           techniques: MOCK.techniques[clientId]||[],
@@ -337,16 +344,24 @@ function useClientData(clientId){
   return {data,loading,source};
 }
 
-function Dashboard({clientId,clients,apiStatus}){
+function Dashboard({clientId,clients,apiStatus,onDataRefresh}){
   const client=clients.find(c=>c.id===clientId)||clients[0];
   const {data,loading,source}=useClientData(clientId);
   const [analyzing,setAnalyzing]=useState(false);
+  const [analyzeStatus,setAnalyzeStatus]=useState('');
 
+  // FIX: call the correct endpoint /api/analyze/all-demo
   const runAnalysis=async()=>{
     setAnalyzing(true);
-    try{await api.post('/api/analyze',{client_id:clientId});}catch(e){}
-    setAnalyzing(false);
-    window.location.reload();
+    setAnalyzeStatus('Running analysis...');
+    try{
+      const result = await api.post('/api/analyze/all-demo',{});
+      setAnalyzeStatus('Analysis complete — reloading data...');
+      setTimeout(()=>window.location.reload(), 1500);
+    }catch(e){
+      setAnalyzeStatus('Analysis failed: ' + e.message);
+      setAnalyzing(false);
+    }
   };
 
   if(loading)return(
@@ -369,11 +384,12 @@ function Dashboard({clientId,clients,apiStatus}){
         </div>
         <div className="flex items-center gap-12">
           {source==='mock'&&<span style={{fontFamily:'var(--font-mono)',fontSize:9,color:'var(--partial)',border:'1px solid rgba(240,180,41,.3)',padding:'3px 8px',borderRadius:3}}>DEMO DATA</span>}
+          {analyzeStatus&&<span style={{fontFamily:'var(--font-mono)',fontSize:9,color:'var(--accent)'}}>{analyzeStatus}</span>}
           <span className={`api-status ${apiStatus}`}>
             <span style={{width:6,height:6,borderRadius:'50%',background:apiStatus==='online'?'var(--built)':apiStatus==='loading'?'var(--partial)':'var(--muted)',display:'inline-block',flexShrink:0}}/>
             API {apiStatus}
           </span>
-          <button className={`btn btn-primary ${apiStatus==='online'?'btn-analyze':''}`} onClick={runAnalysis} disabled={analyzing||apiStatus!=='online'}>
+          <button className={`btn btn-primary ${apiStatus==='online'&&!analyzing?'btn-analyze':''}`} onClick={runAnalysis} disabled={analyzing||apiStatus!=='online'}>
             {analyzing?<><Spinner/> Running...</>:'▶ RUN ANALYSIS'}
           </button>
         </div>
@@ -797,8 +813,14 @@ function App(){
   const [clients,setClients]=useState(MOCK.clients);
   const apiStatus=useApiStatus();
 
+  // FIX: when real clients load from API, also update the active clientId
   useEffect(()=>{
-    api.get('/api/clients').then(c=>{if(c?.length)setClients(c);}).catch(()=>{});
+    api.get('/api/clients').then(c=>{
+      if(c?.length){
+        setClients(c);
+        setClientId(c[0].id); // sync clientId to real API client ID
+      }
+    }).catch(()=>{});
   },[]);
 
   const clientTechs=MOCK.techniques[clientId]||[];
