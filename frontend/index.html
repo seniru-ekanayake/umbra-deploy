@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UMBRA — Detection Coverage Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080c10;--surface:#0d1117;--surface2:#111820;--border:#1c2735;--border2:#243040;--text:#c8d8e8;--muted:#4a6070;--dim:#2a3a4a;--built:#00d97e;--partial:#f0b429;--broken:#e55353;--gap:#2a3a4a;--illusion:#ff6b35;--accent:#00b4ff;--accent2:#7c3aed;--critical:#e55353;--high:#f97316;--medium:#f0b429;--low:#64748b;--font-mono:'IBM Plex Mono',monospace;--font-sans:'IBM Plex Sans',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);font-size:13px;line-height:1.5;overflow-x:hidden}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px}
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:220px;min-width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+.sidebar-logo{padding:20px 16px 16px;border-bottom:1px solid var(--border)}
+.logo-mark{font-family:var(--font-mono);font-size:22px;font-weight:600;color:#fff;letter-spacing:4px;text-transform:uppercase}
+.logo-sub{font-family:var(--font-mono);font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:2px;text-transform:uppercase}
+.sidebar-client{padding:12px 16px;border-bottom:1px solid var(--border)}
+.client-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+.client-select{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:4px;font-family:var(--font-mono);font-size:11px;cursor:pointer;outline:none}
+.client-select:hover{border-color:var(--border2)}
+.nav-section{padding:12px 0}
+.nav-section-label{padding:4px 16px 8px;font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--muted)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:pointer;transition:background .12s;border-left:2px solid transparent;color:var(--muted);font-size:12px}
+.nav-item:hover{background:rgba(255,255,255,.03);color:var(--text)}
+.nav-item.active{border-left-color:var(--accent);background:rgba(0,180,255,.05);color:var(--text)}
+.nav-badge{margin-left:auto;background:var(--critical);color:#fff;font-size:9px;padding:1px 5px;border-radius:10px;font-family:var(--font-mono)}
+.main{flex:1;overflow-y:auto;background:var(--bg)}
+.page-header{padding:20px 28px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;background:var(--bg)}
+.page-title{font-family:var(--font-mono);font-size:16px;color:#fff;font-weight:600;letter-spacing:1px}
+.page-subtitle{font-size:11px;color:var(--muted);margin-top:2px}
+.page-body{padding:24px 28px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.card-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-family:var(--font-mono);font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:1.5px;color:var(--text)}
+.card-body{padding:16px}
+.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.metrics-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;position:relative;overflow:hidden}
+.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.metric-card.accent-built::before{background:var(--built)}
+.metric-card.accent-partial::before{background:var(--partial)}
+.metric-card.accent-broken::before{background:var(--broken)}
+.metric-card.accent-illusion::before{background:var(--illusion)}
+.metric-card.accent-blue::before{background:var(--accent)}
+.metric-value{font-family:var(--font-mono);font-size:28px;font-weight:600;line-height:1;margin-bottom:4px}
+.metric-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.metric-delta{font-family:var(--font-mono);font-size:10px;color:var(--muted);margin-top:4px}
+.matrix-tactic-row{margin-bottom:16px}
+.matrix-tactic-label{font-family:var(--font-mono);font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:8px}
+.matrix-techniques{display:flex;flex-wrap:wrap;gap:4px}
+.matrix-cell{width:36px;height:36px;border-radius:3px;cursor:pointer;position:relative;transition:transform .1s,box-shadow .1s;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:7px;font-weight:500}
+.matrix-cell:hover{transform:scale(1.15);z-index:5;box-shadow:0 4px 16px rgba(0,0,0,.6)}
+.matrix-cell.BUILT{background:rgba(0,217,126,.25);border:1px solid rgba(0,217,126,.5);color:var(--built)}
+.matrix-cell.PARTIAL{background:rgba(240,180,41,.2);border:1px solid rgba(240,180,41,.4);color:var(--partial)}
+.matrix-cell.BROKEN{background:rgba(229,83,83,.2);border:1px solid rgba(229,83,83,.5);color:var(--broken)}
+.matrix-cell.GAP{background:var(--surface2);border:1px solid var(--border);color:var(--dim)}
+.matrix-cell.illusion-ring{box-shadow:0 0 0 2px var(--illusion)!important}
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:3px;font-family:var(--font-mono);font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.badge-built{background:rgba(0,217,126,.15);color:var(--built);border:1px solid rgba(0,217,126,.3)}
+.badge-partial{background:rgba(240,180,41,.15);color:var(--partial);border:1px solid rgba(240,180,41,.3)}
+.badge-broken{background:rgba(229,83,83,.15);color:var(--broken);border:1px solid rgba(229,83,83,.3)}
+.badge-gap{background:rgba(42,58,74,.5);color:var(--muted);border:1px solid var(--border)}
+.badge-illusion{background:rgba(255,107,53,.15);color:var(--illusion);border:1px solid rgba(255,107,53,.3)}
+.badge-critical{background:rgba(229,83,83,.15);color:var(--critical);border:1px solid rgba(229,83,83,.3)}
+.badge-high{background:rgba(249,115,22,.15);color:var(--high);border:1px solid rgba(249,115,22,.3)}
+.badge-medium{background:rgba(240,180,41,.15);color:var(--medium);border:1px solid rgba(240,180,41,.3)}
+.badge-low{background:rgba(100,116,139,.15);color:var(--low);border:1px solid rgba(100,116,139,.3)}
+.badge-blue{background:rgba(0,180,255,.1);color:var(--accent);border:1px solid rgba(0,180,255,.25)}
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{padding:8px 12px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);border-bottom:1px solid var(--border);font-family:var(--font-mono);font-weight:500;white-space:nowrap}
+.data-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:rgba(255,255,255,.02)}
+.progress-bar{height:4px;background:var(--dim);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;border-radius:2px;transition:width .5s ease}
+.stacked-bar{display:flex;height:8px;border-radius:4px;overflow:hidden;gap:1px}
+.gap-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;margin-bottom:10px;overflow:hidden;transition:border-color .15s}
+.gap-card:hover{border-color:var(--border2)}
+.gap-card.illusion{border-left:3px solid var(--illusion)}
+.gap-card.broken{border-left:3px solid var(--broken)}
+.gap-card.gap{border-left:3px solid var(--dim)}
+.gap-card.partial{border-left:3px solid var(--partial)}
+.gap-header{padding:12px 16px;display:flex;align-items:flex-start;gap:12px;cursor:pointer;user-select:none}
+.gap-body{padding:12px 16px 14px;border-top:1px solid var(--border)}
+.rec-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:10px;display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:start}
+.rec-rank{font-family:var(--font-mono);font-size:22px;font-weight:600;color:var(--accent);line-height:1;min-width:32px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:4px;font-family:var(--font-mono);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;border:1px solid transparent;text-transform:uppercase;letter-spacing:.5px}
+.btn-primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.btn-primary:hover{background:#22c3ff}
+.btn-ghost{background:transparent;color:var(--muted);border-color:var(--border)}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text)}
+.btn-danger{background:rgba(229,83,83,.1);color:var(--broken);border-color:rgba(229,83,83,.3)}
+.btn-approve{background:rgba(0,217,126,.1);color:var(--built);border-color:rgba(0,217,126,.3)}
+.btn-sm{padding:4px 10px;font-size:10px}
+.technique-tooltip{position:fixed;z-index:100;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:12px;width:260px;pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,.8)}
+.tooltip-title{font-family:var(--font-mono);font-size:11px;font-weight:600;color:#fff;margin-bottom:4px}
+.tooltip-sub{font-size:10px;color:var(--muted);margin-bottom:8px}
+.hitl-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:10px}
+.integration-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;display:flex;flex-direction:column;gap:12px}
+.status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.status-dot.connected{background:var(--built);box-shadow:0 0 6px var(--built)}
+.status-dot.simulated{background:var(--partial)}
+.status-dot.offline{background:var(--muted)}
+.divider{border:none;border-top:1px solid var(--border);margin:16px 0}
+.flex{display:flex}.flex-col{display:flex;flex-direction:column}.items-center{align-items:center}.items-start{align-items:flex-start}.justify-between{justify-content:space-between}
+.gap-4{gap:4px}.gap-6{gap:6px}.gap-8{gap:8px}.gap-12{gap:12px}.gap-16{gap:16px}.gap-20{gap:20px}
+.mt-4{margin-top:4px}.mt-8{margin-top:8px}.mt-12{margin-top:12px}.mt-16{margin-top:16px}.mt-20{margin-top:20px}
+.mb-4{margin-bottom:4px}.mb-8{margin-bottom:8px}.mb-12{margin-bottom:12px}.mb-16{margin-bottom:16px}
+.w-full{width:100%}.text-mono{font-family:var(--font-mono)}.text-xs{font-size:10px}.text-sm{font-size:11px}
+.text-muted{color:var(--muted)}.text-accent{color:var(--accent)}.text-built{color:var(--built)}.text-broken{color:var(--broken)}.text-partial{color:var(--partial)}.text-illusion{color:var(--illusion)}.text-white{color:#fff}.font-600{font-weight:600}
+.section-title{font-family:var(--font-mono);font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.alert-banner{padding:10px 14px;border-radius:5px;font-size:12px;display:flex;align-items:flex-start;gap:10px}
+.alert-illusion{background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.25);color:var(--illusion)}
+.reasoning-block{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:12px;margin-top:10px}
+.reasoning-label{font-family:var(--font-mono);font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--accent);margin-bottom:6px}
+.reasoning-text{font-size:12px;line-height:1.65;color:var(--text)}
+.filter-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.filter-chip{padding:4px 10px;border-radius:3px;font-family:var(--font-mono);font-size:10px;cursor:pointer;border:1px solid var(--border);color:var(--muted);background:transparent;transition:all .12s;text-transform:uppercase;letter-spacing:.5px}
+.filter-chip:hover{border-color:var(--border2);color:var(--text)}
+.filter-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(0,180,255,.07)}
+.roi-fill{flex:1;height:6px;background:var(--dim);border-radius:3px;overflow:hidden}
+.roi-bar{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--built));transition:width .5s}
+/* Loading / cold start */
+.cold-start-banner{background:rgba(0,180,255,.07);border:1px solid rgba(0,180,255,.2);border-radius:6px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px;font-size:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:14px;height:14px;border:2px solid var(--dim);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;display:inline-block;flex-shrink:0}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,180,255,.4)}50%{box-shadow:0 0 0 6px rgba(0,180,255,0)}}
+.btn-analyze{animation:pulse 2s infinite}
+.api-status{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:9px;padding:4px 8px;border-radius:3px;border:1px solid var(--border)}
+.api-status.online{color:var(--built);border-color:rgba(0,217,126,.3)}
+.api-status.offline{color:var(--muted)}
+.api-status.loading{color:var(--partial)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useRef} = React;
+
+// ── API Configuration ────────────────────────────────────────
+// Reads from window.UMBRA_API_URL (set by Vercel env) or auto-detects
+const API_BASE = (
+  window.UMBRA_API_URL ||
+  (window.location.hostname === 'localhost'
+    ? 'http://localhost:8000'
+    : `${window.location.protocol}//${window.location.hostname.replace('umbra-frontend','umbra-backend')}`)
+);
+
+// ── API Client ───────────────────────────────────────────────
+const api = {
+  async get(path) {
+    const r = await fetch(`${API_BASE}${path}`, {
+      headers: {'Content-Type':'application/json'},
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    return r.json();
+  },
+  async post(path, body) {
+    const r = await fetch(`${API_BASE}${path}`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+    return r.json();
+  },
+};
+
+// ── Mock data (shown when API is unavailable / cold-starting) ─
+const MOCK = {
+  clients: [
+    {id:'a1000000-0000-0000-0000-000000000001',name:'Apex Financial Services',industry:'Financial Services',geography:'North America',tier:'enterprise'},
+    {id:'a1000000-0000-0000-0000-000000000002',name:'NovaMed Health Systems',industry:'Healthcare',geography:'Europe',tier:'enterprise'},
+    {id:'a1000000-0000-0000-0000-000000000003',name:'CoreGrid Energy',industry:'Energy & Utilities',geography:'North America',tier:'critical'},
+  ],
+  techniques: {
+    'a1000000-0000-0000-0000-000000000001': [
+      {technique_id:'T1059.001',name:'PowerShell',tactic:'execution',coverage_state:'BROKEN',coverage_illusion:true,priority_score:92,severity:'critical'},
+      {technique_id:'T1059.003',name:'Windows Cmd Shell',tactic:'execution',coverage_state:'PARTIAL',coverage_illusion:false,priority_score:78,severity:'high'},
+      {technique_id:'T1078.002',name:'Domain Accounts',tactic:'persistence',coverage_state:'PARTIAL',coverage_illusion:false,priority_score:95,severity:'critical'},
+      {technique_id:'T1078.004',name:'Cloud Accounts',tactic:'persistence',coverage_state:'BUILT',coverage_illusion:false,priority_score:88,severity:'high'},
+      {technique_id:'T1055.001',name:'DLL Injection',tactic:'privilege_escalation',coverage_state:'BROKEN',coverage_illusion:true,priority_score:78,severity:'high'},
+      {technique_id:'T1562.001',name:'Disable/Modify Tools',tactic:'defense_evasion',coverage_state:'BUILT',coverage_illusion:false,priority_score:85,severity:'critical'},
+      {technique_id:'T1562.002',name:'Disable Event Logging',tactic:'defense_evasion',coverage_state:'PARTIAL',coverage_illusion:true,priority_score:85,severity:'critical'},
+      {technique_id:'T1003.001',name:'LSASS Memory',tactic:'credential_access',coverage_state:'BROKEN',coverage_illusion:true,priority_score:90,severity:'critical'},
+      {technique_id:'T1110',name:'Brute Force',tactic:'credential_access',coverage_state:'BUILT',coverage_illusion:false,priority_score:70,severity:'medium'},
+      {technique_id:'T1021.001',name:'Remote Desktop Protocol',tactic:'lateral_movement',coverage_state:'BROKEN',coverage_illusion:true,priority_score:82,severity:'high'},
+      {technique_id:'T1041',name:'Exfil Over C2 Channel',tactic:'exfiltration',coverage_state:'GAP',coverage_illusion:false,priority_score:75,severity:'high'},
+      {technique_id:'T1048',name:'Exfil Alt Protocol',tactic:'exfiltration',coverage_state:'GAP',coverage_illusion:false,priority_score:68,severity:'medium'},
+      {technique_id:'T1071.001',name:'Web Protocols C2',tactic:'command_and_control',coverage_state:'GAP',coverage_illusion:false,priority_score:70,severity:'high'},
+      {technique_id:'T1071.004',name:'DNS C2',tactic:'command_and_control',coverage_state:'GAP',coverage_illusion:false,priority_score:72,severity:'high'},
+      {technique_id:'T1566.001',name:'Spearphishing Attachment',tactic:'initial_access',coverage_state:'PARTIAL',coverage_illusion:false,priority_score:88,severity:'critical'},
+    ],
+    'a1000000-0000-0000-0000-000000000002': [
+      {technique_id:'T1059.001',name:'PowerShell',tactic:'execution',coverage_state:'GAP',coverage_illusion:false,priority_score:85,severity:'critical'},
+      {technique_id:'T1059.003',name:'Windows Cmd Shell',tactic:'execution',coverage_state:'PARTIAL',coverage_illusion:false,priority_score:72,severity:'high'},
+      {technique_id:'T1078.002',name:'Domain Accounts',tactic:'persistence',coverage_state:'PARTIAL',coverage_illusion:false,priority_score:90,severity:'critical'},
+      {technique_id:'T1055.001',name:'DLL Injection',tactic:'privilege_escalation',coverage_state:'GAP',coverage_illusion:false,priority_score:65,severity:'high'},
+      {technique_id:'T1562.001',name:'Disable/Modify Tools',tactic:'defense_evasion',coverage_state:'GAP',coverage_illusion:false,priority_score:80,severity:'critical'},
+      {technique_id:'T1003.001',name:'LSASS Memory',tactic:'credential_access',coverage_state:'GAP',coverage_illusion:false,priority_score:88,severity:'critical'},
+      {technique_id:'T1110',name:'Brute Force',tactic:'credential_access',coverage_state:'PARTIAL',coverage_illusion:false,priority_score:75,severity:'medium'},
+      {technique_id:'T1021.001',name:'Remote Desktop Protocol',tactic:'lateral_movement',coverage_state:'PARTIAL',coverage_illusion:true,priority_score:80,severity:'high'},
+      {technique_id:'T1041',name:'Exfil Over C2',tactic:'exfiltration',coverage_state:'PARTIAL',coverage_illusion:false,priority_score:70,severity:'high'},
+      {technique_id:'T1566.001',name:'Spearphishing',tactic:'initial_access',coverage_state:'PARTIAL',coverage_illusion:false,priority_score:85,severity:'critical'},
+    ],
+    'a1000000-0000-0000-0000-000000000003': [
+      {technique_id:'T1059.001',name:'PowerShell',tactic:'execution',coverage_state:'GAP',coverage_illusion:false,priority_score:75,severity:'critical'},
+      {technique_id:'T1078.002',name:'Domain Accounts',tactic:'persistence',coverage_state:'PARTIAL',coverage_illusion:false,priority_score:88,severity:'critical'},
+      {technique_id:'T1562.001',name:'Disable/Modify Tools',tactic:'defense_evasion',coverage_state:'GAP',coverage_illusion:false,priority_score:90,severity:'critical'},
+      {technique_id:'T1003.001',name:'LSASS Memory',tactic:'credential_access',coverage_state:'GAP',coverage_illusion:false,priority_score:78,severity:'critical'},
+      {technique_id:'T1110',name:'Brute Force',tactic:'credential_access',coverage_state:'BUILT',coverage_illusion:false,priority_score:65,severity:'medium'},
+      {technique_id:'T1021.001',name:'RDP',tactic:'lateral_movement',coverage_state:'PARTIAL',coverage_illusion:false,priority_score:85,severity:'high'},
+      {technique_id:'T1041',name:'Exfil Over C2',tactic:'exfiltration',coverage_state:'PARTIAL',coverage_illusion:false,priority_score:78,severity:'high'},
+    ],
+  },
+  gaps: {
+    'a1000000-0000-0000-0000-000000000001': [
+      {id:'g001',technique_id:'T1059.001',technique_name:'PowerShell',tactic:'execution',gap_type:'broken_rule',severity:'critical',priority_score:92,coverage_state:'BROKEN',coverage_illusion:true,title:'T1059.001 — PowerShell: Coverage Illusion',description:'Rules B+C deployed but powershell_logs not ingested — cannot fire. Rule A catches only process creation; misses all encoded/in-memory execution.',missing_sources:['powershell_logs','network_flow'],affected_rules:['RULE-T1059-001-A','RULE-T1059-001-B','RULE-T1059-001-C'],attacker_path:'Adversary uses PowerShell with -EncodedCommand executing a Base64-encoded download cradle. Script Block Logging is absent — zero execution content captured. RULE-T1059-001-B silently fails; only process creation (benign-looking powershell.exe) is visible. Attacker stages Cobalt Strike beacon via Invoke-Expression with string concatenation, bypassing all keyword detection.',detection_failure:'RULE-T1059-001-B requires powershell_logs (HARD) and network_flow (HARD). Neither ingested. Rule shows "deployed" — this is the Coverage Illusion. RULE-T1059-001-A (process_creation only) misses encoded and in-memory execution entirely.',estimated_dwell_time:'21–60 days — Encoded PS without Script Block Logging is effectively silent. Mean detection time in similar stacks: 34 days.',business_impact:'Apex processes $2B+ daily transactions. Undetected PS staging enables AD recon (BloodHound), credential dumping, and full domain compromise. SOX/PCI-DSS exposure if breach exceeds 72 hours undiscovered.'},
+      {id:'g002',technique_id:'T1003.001',technique_name:'LSASS Memory',tactic:'credential_access',gap_type:'broken_rule',severity:'critical',priority_score:90,coverage_state:'BROKEN',coverage_illusion:true,title:'T1003.001 — LSASS: Credential Dumping Undetectable',description:'process_access source deployed but OFFLINE. LSASS rules appear active. Zero process access events reach SIEM.',missing_sources:['process_access'],affected_rules:['RULE-T1003-001-A','RULE-T1003-001-C'],attacker_path:'Post-initial-access, attacker runs custom LSASS dumper on a domain-joined workstation. Sysmon EventID 10 (ProcessAccess) configured but source is offline — zero events flowing. RULE-T1003-001-A cannot evaluate PROCESS_VM_READ access. NTLM hashes and Kerberos tickets extracted in 4 minutes. Pass-the-hash enables domain lateral movement.',detection_failure:'process_access health=offline. Coverage matrix marks LSASS rules as BUILT — this is the Coverage Illusion. Zero process access events reaching SIEM. Attacker has unrestricted credential dumping freedom.',estimated_dwell_time:'7–21 days — Once NTLM hashes obtained, domain admin typically achieved within hours. Without credential telemetry, lateral movement chain invisible.',business_impact:'Domain credential compromise at FS firm threatens trading systems, SWIFT infrastructure, and customer PII. Full domain compromise → $15M–$50M IR + PCI-DSS/SOX penalties.'},
+      {id:'g003',technique_id:'T1021.001',technique_name:'Remote Desktop Protocol',tactic:'lateral_movement',gap_type:'broken_rule',severity:'high',priority_score:82,coverage_state:'BROKEN',coverage_illusion:true,title:'T1021.001 — RDP Chain Rule Broken: network_flow Missing',description:'RULE-T1021-001-B (chain rule) requires network_flow (HARD). Absent. Chain correlation silently fails.',missing_sources:['network_flow'],affected_rules:['RULE-T1021-001-A','RULE-T1021-001-B'],attacker_path:'Using harvested domain credentials, attacker initiates RDP to jump servers and DCs. RULE-T1021-001-A only detects non-admin source hosts via EventID 4624 — attacker uses admin creds, bypassing this heuristic. RULE-T1021-001-B (chain rule) is BROKEN — network_flow absent. Each RDP hop invisible.',detection_failure:'Chain rule requires network_flow correlation. Without it, port-3389 destination patterns cannot be evaluated. Single-source detection misses privileged RDP. Full lateral movement path undetected.',estimated_dwell_time:'3–14 days — Lateral movement phase spans days to weeks before ransomware/exfil stage.',business_impact:'RDP to DCs enables NTDS.dit dump (all domain creds), persistence deployment, and ransomware staging. Business continuity risk is severe.'},
+      {id:'g004',technique_id:'T1041',technique_name:'Exfiltration Over C2 Channel',tactic:'exfiltration',gap_type:'visibility_gap',severity:'high',priority_score:75,coverage_state:'GAP',coverage_illusion:false,title:'T1041 — Exfiltration: Complete Blind Spot',description:'Zero rules deployed. network_flow and proxy_logs not ingested. No telemetry for detection or forensics.',missing_sources:['network_flow','proxy_logs'],affected_rules:[],attacker_path:'Attacker exfiltrates via chunked HTTPS POSTs to CDN-fronted C2. Without proxy_logs or network_flow, zero visibility into outbound volume or destination reputation. Large transfers blend into normal business traffic. Data exfiltrated at will.',detection_failure:'No rules deployed for T1041. Even if deployed, both required sources absent. Complete visibility gap — no telemetry, no detection, no retrospective forensics possible.',estimated_dwell_time:'Indeterminate — exfiltration may have started prior to engagement. Without historical network telemetry, reconstruction impossible.',business_impact:'Undetected exfil from FS firm could mean customer PII, trading strategies, M&A data in attacker hands. PCI-DSS notification at 5,000 cardholder records. SOX audit implications.'},
+      {id:'g005',technique_id:'T1078.002',technique_name:'Domain Accounts',tactic:'persistence',gap_type:'partial_coverage',severity:'high',priority_score:68,coverage_state:'PARTIAL',coverage_illusion:false,title:'T1078.002 — Domain Accounts: Correlation Rule Degraded',description:'RULE-T1078-002-B (correlation) requires network_flow (HARD). Without it, domain account lateral movement correlation is single-source only.',missing_sources:['network_flow'],affected_rules:['RULE-T1078-002-A','RULE-T1078-002-B'],attacker_path:'Attacker with compromised domain creds uses valid account for persistence. RULE-T1078-002-A (off-hours) catches obvious patterns but misses business-hours access. Correlation rule non-functional without network_flow — lateral movement via valid account undetected.',detection_failure:'Partial coverage. Single-source rule catches obvious abuse (off-hours, impossible travel) but misses nuanced usage. Correlation rule degraded without network_flow.',estimated_dwell_time:'30–90 days — Valid account abuse has highest average dwell time of any technique category.',business_impact:'Domain account persistence is foundation for all subsequent attack phases. Attacker with persistent access can wait, learn environment, and strike at chosen time.'},
+    ],
+    'a1000000-0000-0000-0000-000000000002': [
+      {id:'g006',technique_id:'T1059.001',technique_name:'PowerShell',tactic:'execution',gap_type:'detection_gap',severity:'critical',priority_score:85,coverage_state:'GAP',coverage_illusion:false,title:'T1059.001 — PowerShell: No Coverage (No EDR)',description:'Zero rules deployed. No EDR, no process_creation, no powershell_logs. Complete blind spot.',missing_sources:['edr_telemetry','process_creation','powershell_logs'],affected_rules:[],attacker_path:'NovaMed has no EDR deployed. Attacker executes PowerShell freely — no process telemetry, no script block logging. Living-off-the-land via PowerShell is completely invisible.',detection_failure:'No rules, no sources. Pure detection gap. NovaMed lacks the fundamental endpoint telemetry required for any PS-based detection.',estimated_dwell_time:'45–90 days — Healthcare environments without EDR have extended dwell. Average 68 days per MITRE data.',business_impact:'PHI exfiltration risk (HIPAA breach). Ransomware targeting clinical systems threatens patient safety and operational continuity.'},
+      {id:'g007',technique_id:'T1003.001',technique_name:'LSASS Memory',tactic:'credential_access',gap_type:'visibility_gap',severity:'critical',priority_score:88,coverage_state:'GAP',coverage_illusion:false,title:'T1003.001 — LSASS: No EDR = No Credential Visibility',description:'No EDR at NovaMed. All credential dumping techniques are complete blind spots.',missing_sources:['edr_telemetry','process_access'],affected_rules:[],attacker_path:'Attacker dumps LSASS on any domain-joined endpoint at NovaMed. Without EDR or Sysmon, zero process access events generated. All credential dumping is completely undetected.',detection_failure:'Requires process_access (Sysmon EID10) or edr_telemetry. Neither present. Visibility gap — the telemetry layer does not exist.',estimated_dwell_time:'14–30 days — LSASS dumping typically precedes ransomware by 2–4 weeks in healthcare incidents.',business_impact:'Domain credential compromise at healthcare provider threatens EMR/EHR systems, medical device networks, and patient safety systems. HIPAA breach notification obligations.'},
+    ],
+    'a1000000-0000-0000-0000-000000000003': [
+      {id:'g008',technique_id:'T1562.001',technique_name:'Disable/Modify Tools',tactic:'defense_evasion',gap_type:'detection_gap',severity:'critical',priority_score:90,coverage_state:'GAP',coverage_illusion:false,title:'T1562.001 — Disable AV/EDR: Complete Gap (OT Environment)',description:'No EDR at CoreGrid. No rules deployed. AV/EDR disabling — standard precursor to OT attacks — undetectable.',missing_sources:['edr_telemetry','windows_event_logs'],affected_rules:[],attacker_path:'Adversary targeting CoreGrid OT environment disables endpoint protection as first step. Without EDR, the termination of security tools generates zero alerts. Attacker proceeds to OT network pivot unimpeded.',detection_failure:'Requires edr_telemetry (HARD). Not present in CoreGrid. No windows_event_logs either. Complete visibility gap for defense evasion.',estimated_dwell_time:'30–60 days — OT-targeted attacks typically have longest dwell time. Attackers may wait months after initial access before disruption.',business_impact:'Grid disruption events at energy utility have cascading infrastructure impact. NERC-CIP regulatory exposure. Potential physical safety risk if OT safety systems are reached.'},
+    ],
+  },
+  recommendations: {
+    'a1000000-0000-0000-0000-000000000001': [
+      {source_key:'powershell_logs',source_name:'PowerShell Script Block Logging',category:'endpoint',setup_complexity:'medium',techniques_unlocked:1,rules_activated:3,detection_improvement:28,estimated_monthly_cost:315,estimated_annual_cost:3780,roi_score:97,priority_rank:1,technique_ids:['T1059.001'],description:'Closes T1059.001 Coverage Illusion. Activates 3 rules including download cradle correlation. Extremely high ROI — $315/month resolves a critical blind spot.'},
+      {source_key:'process_access',source_name:'Process Access Events (Sysmon EID10)',category:'endpoint',setup_complexity:'medium',techniques_unlocked:2,rules_activated:3,detection_improvement:22,estimated_monthly_cost:63,estimated_annual_cost:756,roi_score:91,priority_rank:2,technique_ids:['T1003.001','T1055.001'],description:'Fixes the LSASS Coverage Illusion (source configured but offline). Resolves credential dumping and DLL injection blind spots. Fix, not new ingestion.'},
+      {source_key:'network_flow',source_name:'Network Flow / NetFlow / IPFIX',category:'network',setup_complexity:'high',techniques_unlocked:6,rules_activated:7,detection_improvement:42,estimated_monthly_cost:4320,estimated_annual_cost:51840,roi_score:89,priority_rank:3,technique_ids:['T1041','T1071.001','T1071.004','T1021.001','T1048','T1078.002'],description:'Resolves 7 broken/missing rules across 6 high-priority techniques. Fixes RDP chain, enables DNS C2 detection, closes exfiltration blind spot.'},
+      {source_key:'dns_logs',source_name:'DNS Query Logs',category:'network',setup_complexity:'medium',techniques_unlocked:2,rules_activated:2,detection_improvement:18,estimated_monthly_cost:675,estimated_annual_cost:8100,roi_score:72,priority_rank:4,technique_ids:['T1071.004','T1048'],description:'Enables DNS C2 detection (T1071.004) and DNS tunnelling exfiltration (T1048). Medium cost, high tactic-level impact.'},
+    ],
+    'a1000000-0000-0000-0000-000000000002': [
+      {source_key:'edr_telemetry',source_name:'EDR Process & Memory Telemetry',category:'endpoint',setup_complexity:'medium',techniques_unlocked:8,rules_activated:12,detection_improvement:65,estimated_monthly_cost:4500,estimated_annual_cost:54000,roi_score:95,priority_rank:1,technique_ids:['T1059.001','T1003.001','T1055.001','T1562.001','T1021.001','T1566.001','T1486'],description:'NovaMed has zero EDR. This single source unlocks 12 rules across 8 critical techniques. Highest impact recommendation in portfolio.'},
+      {source_key:'process_creation',source_name:'Process Creation Events (Sysmon)',category:'endpoint',setup_complexity:'medium',techniques_unlocked:3,rules_activated:4,detection_improvement:28,estimated_monthly_cost:240,estimated_annual_cost:2880,roi_score:82,priority_rank:2,technique_ids:['T1059.001','T1059.003','T1566.001'],description:'Sysmon EID1 provides process telemetry without full EDR cost. Interim coverage while EDR deployment planned.'},
+    ],
+    'a1000000-0000-0000-0000-000000000003': [
+      {source_key:'windows_event_logs',source_name:'Windows Event Logs (All Channels)',category:'endpoint',setup_complexity:'low',techniques_unlocked:3,rules_activated:3,detection_improvement:22,estimated_monthly_cost:600,estimated_annual_cost:7200,roi_score:85,priority_rank:1,technique_ids:['T1562.001','T1562.002','T1486'],description:'Low complexity, immediate coverage uplift for defense evasion techniques. Essential baseline for any Windows environment.'},
+      {source_key:'edr_telemetry',source_name:'EDR Process & Memory Telemetry',category:'endpoint',setup_complexity:'medium',techniques_unlocked:6,rules_activated:9,detection_improvement:55,estimated_monthly_cost:5400,estimated_annual_cost:64800,roi_score:78,priority_rank:2,technique_ids:['T1059.001','T1003.001','T1055.001','T1562.001','T1566.001','T1486'],description:'Critical for CoreGrid OT — IT compromise precedes OT pivot in >90% of ICS attacks. EDR on IT layer is essential defensive control.'},
+    ],
+  },
+};
+
+// ── Helpers ──────────────────────────────────────────────────
+const TACTICS_ORDER = ['initial_access','execution','persistence','privilege_escalation','defense_evasion','credential_access','lateral_movement','command_and_control','exfiltration','impact'];
+
+function computeSummary(techs) {
+  const c = {BUILT:0,PARTIAL:0,BROKEN:0,GAP:0}; let illusion=0;
+  techs.forEach(t=>{c[t.coverage_state]++;if(t.coverage_illusion)illusion++;});
+  const total=techs.length||1;
+  const real=(c.BUILT+c.PARTIAL*0.5)/total*100;
+  const apparent=(c.BUILT+c.PARTIAL*0.5+c.BROKEN*0.5)/total*100;
+  return{...c,total,illusion_count:illusion,real_coverage_pct:real.toFixed(1),apparent_coverage_pct:apparent.toFixed(1),illusion_gap_pct:(apparent-real).toFixed(1)};
+}
+const sevColor=s=>({critical:'var(--critical)',high:'var(--high)',medium:'var(--medium)',low:'var(--muted)'}[s]||'var(--muted)');
+
+// ── UI Components ─────────────────────────────────────────────
+function Badge({type,children}){return <span className={`badge badge-${type}`}>{children}</span>;}
+function StateBadge({state,illusion}){
+  if(illusion)return <span className="badge badge-illusion">⚠ Illusion</span>;
+  const t={BUILT:'built',PARTIAL:'partial',BROKEN:'broken',GAP:'gap'};
+  return <Badge type={t[state]||'gap'}>{state}</Badge>;
+}
+function SevBadge({severity}){return <Badge type={severity}>{severity}</Badge>;}
+function ProgressBar({value,color='var(--accent)',height=4}){
+  return <div className="progress-bar" style={{height}}><div className="progress-fill" style={{width:`${Math.min(value,100)}%`,background:color,height}}/></div>;
+}
+function Spinner(){return <div className="spinner"/>;}
+
+function CoverageDonut({summary}){
+  const size=120,cx=60,cy=60,r=46,circ=2*Math.PI*r;
+  const segs=[{k:'BUILT',c:'var(--built)',n:summary.BUILT},{k:'PARTIAL',c:'var(--partial)',n:summary.PARTIAL},{k:'BROKEN',c:'var(--broken)',n:summary.BROKEN},{k:'GAP',c:'var(--dim)',n:summary.GAP}];
+  let off=0;
+  const arcs=segs.map(s=>{const pct=s.n/summary.total,d=pct*circ,a={...s,d,g:circ-d,off};off+=d;return a;});
+  return(
+    <div style={{position:'relative',width:size,height:size}}>
+      <svg width={size} height={size} style={{transform:'rotate(-90deg)'}}>
+        {arcs.map(a=><circle key={a.k} cx={cx} cy={cy} r={r} fill="none" stroke={a.c} strokeWidth={14} strokeDasharray={`${a.d} ${a.g}`} strokeDashoffset={-a.off}/>)}
+      </svg>
+      <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',textAlign:'center'}}>
+        <div style={{fontFamily:'var(--font-mono)',fontSize:22,fontWeight:600,color:'#fff',lineHeight:1}}>{summary.real_coverage_pct}%</div>
+        <div style={{fontSize:8,color:'var(--muted)',textTransform:'uppercase',letterSpacing:1,marginTop:2}}>Real</div>
+      </div>
+    </div>
+  );
+}
+
+// ── API Status Hook ───────────────────────────────────────────
+function useApiStatus(){
+  const [status,setStatus]=useState('loading');
+  useEffect(()=>{
+    api.get('/health')
+      .then(()=>setStatus('online'))
+      .catch(()=>setStatus('offline'));
+  },[]);
+  return status;
+}
+
+// ── Data Hook — loads from API with mock fallback ─────────────
+function useClientData(clientId){
+  const [data,setData]=useState(null);
+  const [loading,setLoading]=useState(true);
+  const [source,setSource]=useState('mock'); // 'api' | 'mock'
+
+  useEffect(()=>{
+    if(!clientId)return;
+    setLoading(true);
+
+    // Try to load from API, fall back to mock
+    const load=async()=>{
+      try{
+        const [techs,gaps,recs]=await Promise.all([
+          api.get(`/api/coverage?client_id=${clientId}`),
+          api.get(`/api/gaps?client_id=${clientId}`),
+          api.get(`/api/recommendations?client_id=${clientId}`),
+        ]);
+        // Map API response to expected shape
+        const mappedTechs = techs.map(t=>({
+          ...t, severity: t.priority_score>=85?'critical':t.priority_score>=70?'high':'medium'
+        }));
+        setData({techniques:mappedTechs, gaps, recommendations:recs});
+        setSource('api');
+      }catch(e){
+        // Fall back to mock data
+        setData({
+          techniques: MOCK.techniques[clientId]||[],
+          gaps: MOCK.gaps[clientId]||[],
+          recommendations: MOCK.recommendations[clientId]||[],
+        });
+        setSource('mock');
+      }finally{
+        setLoading(false);
+      }
+    };
+    load();
+  },[clientId]);
+
+  return {data,loading,source};
+}
+
+// ── Dashboard ─────────────────────────────────────────────────
+function Dashboard({clientId,clients,apiStatus}){
+  const client=clients.find(c=>c.id===clientId)||clients[0];
+  const {data,loading,source}=useClientData(clientId);
+  const [analyzing,setAnalyzing]=useState(false);
+
+  const runAnalysis=async()=>{
+    setAnalyzing(true);
+    try{await api.post('/api/analyze',{client_id:clientId});}catch(e){}
+    setAnalyzing(false);
+    window.location.reload();
+  };
+
+  if(loading)return(
+    <div>
+      <div className="page-header"><div><div className="page-title">COVERAGE DASHBOARD</div><div className="page-subtitle">{client?.name}</div></div></div>
+      <div className="page-body"><div className="flex items-center gap-12" style={{padding:'60px 0',justifyContent:'center'}}><Spinner/><span style={{color:'var(--muted)',fontFamily:'var(--font-mono)'}}>Loading coverage data...</span></div></div>
+    </div>
+  );
+
+  const {techniques,gaps,recommendations}=data;
+  const summary=computeSummary(techniques);
+  const critGaps=gaps.filter(g=>g.severity==='critical');
+
+  return(
+    <div>
+      <div className="page-header">
+        <div>
+          <div className="page-title">COVERAGE DASHBOARD</div>
+          <div className="page-subtitle">{client?.name} — {client?.industry} — {client?.geography}</div>
+        </div>
+        <div className="flex items-center gap-12">
+          {source==='mock'&&<span style={{fontFamily:'var(--font-mono)',fontSize:9,color:'var(--partial)',border:'1px solid rgba(240,180,41,.3)',padding:'3px 8px',borderRadius:3}}>DEMO DATA</span>}
+          <span className={`api-status ${apiStatus}`}>
+            <span style={{width:6,height:6,borderRadius:'50%',background:apiStatus==='online'?'var(--built)':apiStatus==='loading'?'var(--partial)':'var(--muted)',display:'inline-block',flexShrink:0}}/>
+            API {apiStatus}
+          </span>
+          <button className={`btn btn-primary ${apiStatus==='online'?'btn-analyze':''}`} onClick={runAnalysis} disabled={analyzing||apiStatus!=='online'}>
+            {analyzing?<><Spinner/> Running...</>:'▶ RUN ANALYSIS'}
+          </button>
+        </div>
+      </div>
+      <div className="page-body">
+        {summary.illusion_count>0&&(
+          <div className="alert-banner alert-illusion mb-16">
+            <span>⚠</span>
+            <div><strong>Coverage Illusion Detected</strong> — {summary.illusion_count} technique{summary.illusion_count>1?'s':''} appear covered but rules are non-functional. Apparent: {summary.apparent_coverage_pct}% | Real: {summary.real_coverage_pct}% | False confidence: <strong>{summary.illusion_gap_pct}%</strong></div>
+          </div>
+        )}
+        <div className="metrics-grid mb-16">
+          {[
+            {label:'Real Coverage',value:`${summary.real_coverage_pct}%`,cls:'accent-built',color:'var(--built)',sub:`Apparent: ${summary.apparent_coverage_pct}%`},
+            {label:'Coverage Illusions',value:summary.illusion_count,cls:'accent-illusion',color:'var(--illusion)',sub:`${summary.illusion_gap_pct}% false confidence`},
+            {label:'Open Gaps',value:gaps.filter(g=>!g.resolved).length,cls:'accent-broken',color:'var(--broken)',sub:`${critGaps.length} critical`},
+            {label:'Top Recommendations',value:recommendations.length,cls:'accent-blue',color:'var(--accent)',sub:'Ranked by ROI'},
+          ].map(m=>(
+            <div key={m.label} className={`metric-card ${m.cls}`}>
+              <div className="metric-value" style={{color:m.color}}>{m.value}</div>
+              <div className="metric-label">{m.label}</div>
+              <div className="metric-delta">{m.sub}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+          <div className="card">
+            <div className="card-header"><span className="card-title">Coverage Breakdown</span></div>
+            <div className="card-body">
+              <div className="flex items-center gap-24">
+                <CoverageDonut summary={summary}/>
+                <div style={{flex:1}}>
+                  {[{k:'BUILT',l:'Fully Covered',c:'var(--built)',n:summary.BUILT},{k:'PARTIAL',l:'Partial',c:'var(--partial)',n:summary.PARTIAL},{k:'BROKEN',l:'Broken / Illusion',c:'var(--broken)',n:summary.BROKEN},{k:'GAP',l:'No Coverage',c:'var(--dim)',n:summary.GAP}].map(s=>(
+                    <div key={s.k} className="flex items-center gap-8 mb-8">
+                      <div style={{width:8,height:8,borderRadius:'50%',background:s.c,flexShrink:0}}/>
+                      <div style={{flex:1,fontSize:11}}>{s.l}</div>
+                      <div style={{fontFamily:'var(--font-mono)',fontSize:12,color:s.c}}>{s.n}</div>
+                      <div style={{width:60}}><ProgressBar value={s.n/summary.total*100} color={s.c} height={3}/></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-header"><span className="card-title">Top Gaps by Priority</span></div>
+            <div className="card-body" style={{padding:0}}>
+              <table className="data-table">
+                <thead><tr><th>Technique</th><th>State</th><th>Severity</th><th>Score</th></tr></thead>
+                <tbody>
+                  {gaps.slice(0,5).map(g=>(
+                    <tr key={g.id||g.technique_id}>
+                      <td><span className="text-mono" style={{fontSize:11,color:'var(--accent)',fontWeight:600}}>{g.technique_id}</span><br/><span className="text-xs text-muted">{g.technique_name}</span></td>
+                      <td><StateBadge state={g.coverage_state} illusion={g.coverage_illusion}/></td>
+                      <td><SevBadge severity={g.severity}/></td>
+                      <td><span className="text-mono" style={{color:sevColor(g.severity)}}>{g.priority_score}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-header"><span className="card-title">Tactic Coverage Heatmap</span></div>
+          <div className="card-body">
+            {TACTICS_ORDER.map(tactic=>{
+              const techs=techniques.filter(t=>t.tactic===tactic);
+              if(!techs.length)return null;
+              const built=techs.filter(t=>t.coverage_state==='BUILT').length;
+              return(
+                <div key={tactic} className="flex items-center gap-12 mb-8">
+                  <div style={{width:160,fontFamily:'var(--font-mono)',fontSize:10,textTransform:'uppercase',color:'var(--muted)',letterSpacing:1}}>{tactic.replace(/_/g,' ')}</div>
+                  <div style={{flex:1}}>
+                    <div className="stacked-bar">
+                      {techs.map(t=>(
+                        <div key={t.technique_id} style={{flex:1,background:t.coverage_illusion?'var(--illusion)':t.coverage_state==='BUILT'?'var(--built)':t.coverage_state==='PARTIAL'?'var(--partial)':t.coverage_state==='BROKEN'?'var(--broken)':'var(--dim)',opacity:.85}} title={`${t.technique_id}: ${t.coverage_state}`}/>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{width:32,textAlign:'right',fontFamily:'var(--font-mono)',fontSize:10,color:built/techs.length>0.5?'var(--built)':'var(--broken)'}}>{Math.round(built/techs.length*100)}%</div>
+                  <div style={{width:16,fontSize:10,color:'var(--muted)'}}>{techs.length}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MITRE Matrix ──────────────────────────────────────────────
+function CoverageMatrix({clientId}){
+  const {data,loading}=useClientData(clientId);
+  const [tooltip,setTooltip]=useState(null);
+  const [filter,setFilter]=useState('ALL');
+  if(loading)return <div className="page-body flex items-center gap-12" style={{paddingTop:60,justifyContent:'center'}}><Spinner/><span style={{color:'var(--muted)',fontFamily:'var(--font-mono)'}}>Loading matrix...</span></div>;
+  const techniques=data?.techniques||[];
+  const filtered=filter==='ALL'?techniques:filter==='ILLUSION'?techniques.filter(t=>t.coverage_illusion):techniques.filter(t=>t.coverage_state===filter);
+  const byTactic={};filtered.forEach(t=>{(byTactic[t.tactic]||(byTactic[t.tactic]=[])).push(t);});
+  const summary=computeSummary(techniques);
+  return(
+    <div>
+      <div className="page-header">
+        <div><div className="page-title">MITRE ATT&CK COVERAGE MATRIX</div><div className="page-subtitle">Technique × Rule × Source — per tactic</div></div>
+        <div style={{fontFamily:'var(--font-mono)',fontSize:11,color:'var(--muted)'}}>REAL: {summary.real_coverage_pct}% / APPARENT: {summary.apparent_coverage_pct}%</div>
+      </div>
+      <div className="page-body">
+        <div className="filter-row mb-16">
+          {['ALL','BUILT','PARTIAL','BROKEN','GAP','ILLUSION'].map(f=>(
+            <button key={f} className={`filter-chip ${filter===f?'active':''}`} onClick={()=>setFilter(f)}>{f}</button>
+          ))}
+        </div>
+        <div className="flex gap-16 mb-16" style={{flexWrap:'wrap'}}>
+          {[{l:'BUILT',c:'var(--built)',n:summary.BUILT},{l:'PARTIAL',c:'var(--partial)',n:summary.PARTIAL},{l:'BROKEN',c:'var(--broken)',n:summary.BROKEN},{l:'GAP',c:'var(--dim)',n:summary.GAP},{l:'⚠ ILLUSION',c:'var(--illusion)',n:summary.illusion_count,ring:true}].map(leg=>(
+            <div key={leg.l} className="flex items-center gap-6">
+              <div style={{width:12,height:12,borderRadius:2,background:leg.c,boxShadow:leg.ring?`0 0 0 2px var(--illusion)`:undefined}}/>
+              <span style={{fontFamily:'var(--font-mono)',fontSize:10,color:'var(--muted)'}}>{leg.l}</span>
+              <span style={{fontFamily:'var(--font-mono)',fontSize:11,color:leg.c}}>{leg.n}</span>
+            </div>
+          ))}
+        </div>
+        <div className="card">
+          <div className="card-body">
+            {TACTICS_ORDER.map(tactic=>{
+              const techs=byTactic[tactic];
+              if(!techs?.length)return null;
+              return(
+                <div key={tactic} className="matrix-tactic-row">
+                  <div className="matrix-tactic-label">{tactic.replace(/_/g,' ')}</div>
+                  <div className="matrix-techniques">
+                    {techs.map(t=>(
+                      <div key={t.technique_id}
+                        className={`matrix-cell ${t.coverage_state} ${t.coverage_illusion?'illusion-ring':''}`}
+                        onMouseEnter={e=>{const rc=e.currentTarget.getBoundingClientRect();setTooltip({t,x:rc.right+8,y:rc.top});}}
+                        onMouseLeave={()=>setTooltip(null)}>
+                        {t.technique_id.replace('T','').slice(0,7)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        {tooltip&&(
+          <div className="technique-tooltip" style={{left:Math.min(tooltip.x,window.innerWidth-280),top:Math.max(tooltip.y-10,10)}}>
+            <div className="tooltip-title">{tooltip.t.technique_id}</div>
+            <div className="tooltip-sub">{tooltip.t.name}</div>
+            <div className="flex gap-6 mb-8">
+              <StateBadge state={tooltip.t.coverage_state} illusion={tooltip.t.coverage_illusion}/>
+              <SevBadge severity={tooltip.t.severity}/>
+            </div>
+            <div className="flex items-center gap-6">
+              <span style={{fontSize:10,color:'var(--muted)'}}>PRIORITY</span>
+              <div style={{flex:1}}><ProgressBar value={tooltip.t.priority_score} color={sevColor(tooltip.t.severity)}/></div>
+              <span style={{fontFamily:'var(--font-mono)',fontSize:11}}>{tooltip.t.priority_score}</span>
+            </div>
+            {tooltip.t.coverage_illusion&&<div style={{marginTop:8,padding:'6px 8px',background:'rgba(255,107,53,.1)',borderRadius:3,fontSize:10,color:'var(--illusion)'}}>⚠ Coverage Illusion — Rules deployed but cannot fire</div>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Gap Explorer ──────────────────────────────────────────────
+function GapExplorer({clientId}){
+  const {data,loading}=useClientData(clientId);
+  const [expanded,setExpanded]=useState(null);
+  const [sevFilter,setSevFilter]=useState('ALL');
+  const [typeFilter,setTypeFilter]=useState('ALL');
+  if(loading)return <div className="page-body flex items-center gap-12" style={{paddingTop:60,justifyContent:'center'}}><Spinner/></div>;
+  const gaps=data?.gaps||[];
+  const filtered=gaps.filter(g=>{
+    if(sevFilter!=='ALL'&&g.severity!==sevFilter)return false;
+    if(typeFilter==='ILLUSION'&&!g.coverage_illusion)return false;
+    if(typeFilter==='DETECTION'&&g.gap_type!=='detection_gap'&&g.gap_type!=='broken_rule')return false;
+    if(typeFilter==='VISIBILITY'&&g.gap_type!=='visibility_gap')return false;
+    return true;
+  });
+  return(
+    <div>
+      <div className="page-header">
+        <div><div className="page-title">GAP EXPLORER</div><div className="page-subtitle">Detection Gaps — Visibility Gaps — Coverage Illusions</div></div>
+      </div>
+      <div className="page-body">
+        <div className="metrics-grid-3 mb-16">
+          <div className="metric-card accent-illusion"><div className="metric-value" style={{color:'var(--illusion)'}}>{gaps.filter(g=>g.coverage_illusion).length}</div><div className="metric-label">Coverage Illusions</div><div className="metric-delta">Rules deployed but broken</div></div>
+          <div className="metric-card accent-broken"><div className="metric-value" style={{color:'var(--broken)'}}>{gaps.filter(g=>g.gap_type==='broken_rule'||g.gap_type==='detection_gap').length}</div><div className="metric-label">Detection Gaps</div><div className="metric-delta">Missing / broken rules</div></div>
+          <div className="metric-card accent-blue"><div className="metric-value" style={{color:'var(--accent)'}}>{gaps.filter(g=>g.gap_type==='visibility_gap').length}</div><div className="metric-label">Visibility Gaps</div><div className="metric-delta">Missing log sources</div></div>
+        </div>
+        <div className="filter-row mb-12">
+          <span style={{fontSize:10,color:'var(--muted)',fontFamily:'var(--font-mono)'}}>SEV:</span>
+          {['ALL','critical','high','medium'].map(f=><button key={f} className={`filter-chip ${sevFilter===f?'active':''}`} onClick={()=>setSevFilter(f)}>{f}</button>)}
+          <span style={{fontSize:10,color:'var(--muted)',fontFamily:'var(--font-mono)',marginLeft:8}}>TYPE:</span>
+          {['ALL','ILLUSION','DETECTION','VISIBILITY'].map(f=><button key={f} className={`filter-chip ${typeFilter===f?'active':''}`} onClick={()=>setTypeFilter(f)}>{f}</button>)}
+        </div>
+        {filtered.map(g=>{
+          const isExp=expanded===g.id;
+          const cls=g.coverage_illusion?'illusion':g.coverage_state==='BROKEN'?'broken':g.coverage_state==='GAP'?'gap':'partial';
+          return(
+            <div key={g.id||g.technique_id} className={`gap-card ${cls}`}>
+              <div className="gap-header" onClick={()=>setExpanded(isExp?null:g.id)}>
+                <div style={{flex:1}}>
+                  <div className="flex items-center gap-8 mb-4">
+                    <span className="text-mono" style={{fontSize:12,color:'var(--accent)',fontWeight:600}}>{g.technique_id}</span>
+                    <StateBadge state={g.coverage_state} illusion={g.coverage_illusion}/>
+                    <SevBadge severity={g.severity}/>
+                    <span className="badge badge-blue">{(g.gap_type||'').replace(/_/g,' ')}</span>
+                  </div>
+                  <div style={{fontSize:12,color:'var(--text)',fontWeight:500}}>{g.technique_name} — {(g.tactic||'').replace(/_/g,' ')}</div>
+                  <div style={{fontSize:11,color:'var(--muted)',marginTop:3}}>{g.description}</div>
+                </div>
+                <div className="flex items-center gap-12">
+                  <div style={{textAlign:'right'}}>
+                    <div style={{fontFamily:'var(--font-mono)',fontSize:18,color:sevColor(g.severity),lineHeight:1}}>{g.priority_score}</div>
+                    <div style={{fontSize:9,color:'var(--muted)',textTransform:'uppercase',letterSpacing:1}}>Priority</div>
+                  </div>
+                  <span style={{color:'var(--muted)',fontSize:14,transform:isExp?'rotate(90deg)':'rotate(0deg)',transition:'transform .2s',display:'inline-block'}}>▶</span>
+                </div>
+              </div>
+              {isExp&&(
+                <div className="gap-body">
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:10}}>
+                    <div>
+                      <div className="section-title">Affected Rules</div>
+                      {(g.affected_rules||[]).length>0?(g.affected_rules||[]).map(r=>(
+                        <div key={r} className="flex items-center gap-6 mb-4">
+                          <span style={{width:6,height:6,borderRadius:'50%',background:'var(--broken)',display:'inline-block',flexShrink:0}}/>
+                          <span className="text-mono" style={{fontSize:10}}>{r}</span>
+                        </div>
+                      )):<span style={{fontSize:11,color:'var(--muted)'}}>No rules deployed</span>}
+                    </div>
+                    <div>
+                      <div className="section-title">Missing Sources</div>
+                      {(g.missing_sources||[]).map(s=>(
+                        <div key={s} className="flex items-center gap-6 mb-4">
+                          <span style={{width:6,height:6,borderRadius:0,background:'var(--broken)',display:'inline-block',flexShrink:0}}/>
+                          <span className="text-mono" style={{fontSize:10,color:'var(--partial)'}}>{s}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {g.attacker_path&&<div className="reasoning-block"><div className="reasoning-label">⬡ Attacker Path</div><div className="reasoning-text">{g.attacker_path}</div></div>}
+                  {g.detection_failure&&<div className="reasoning-block" style={{marginTop:8}}><div className="reasoning-label" style={{color:'var(--broken)'}}>✕ Why Detection Fails</div><div className="reasoning-text">{g.detection_failure}</div></div>}
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:8}}>
+                    {g.estimated_dwell_time&&<div className="reasoning-block"><div className="reasoning-label" style={{color:'var(--partial)'}}>⏱ Dwell Time</div><div className="reasoning-text" style={{fontSize:11}}>{g.estimated_dwell_time}</div></div>}
+                    {g.business_impact&&<div className="reasoning-block"><div className="reasoning-label" style={{color:'var(--high)'}}>💥 Business Impact</div><div className="reasoning-text" style={{fontSize:11}}>{g.business_impact}</div></div>}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {filtered.length===0&&<div style={{textAlign:'center',padding:'48px',color:'var(--muted)',fontFamily:'var(--font-mono)'}}>NO GAPS MATCHING CURRENT FILTERS</div>}
+      </div>
+    </div>
+  );
+}
+
+// ── Recommendations ───────────────────────────────────────────
+function Recommendations({clientId}){
+  const {data,loading}=useClientData(clientId);
+  if(loading)return <div className="page-body flex items-center gap-12" style={{paddingTop:60,justifyContent:'center'}}><Spinner/></div>;
+  const recs=data?.recommendations||[];
+  return(
+    <div>
+      <div className="page-header"><div><div className="page-title">LOG INGESTION RECOMMENDATIONS</div><div className="page-subtitle">Ranked by ROI — detection gain vs. ingestion cost</div></div></div>
+      <div className="page-body">
+        <div className="metrics-grid-3 mb-16">
+          <div className="metric-card accent-blue"><div className="metric-value" style={{color:'var(--accent)'}}>{recs.length}</div><div className="metric-label">Recommendations</div></div>
+          <div className="metric-card accent-built"><div className="metric-value" style={{color:'var(--built)'}}>+{recs.reduce((s,r)=>s+(r.detection_improvement||0),0).toFixed(0)}pts</div><div className="metric-label">Total Detection Gain</div></div>
+          <div className="metric-card accent-partial"><div className="metric-value" style={{color:'var(--partial)'}}>${(recs.reduce((s,r)=>s+(r.estimated_monthly_cost||r.estimated_cost_monthly||0),0)/1000).toFixed(1)}k</div><div className="metric-label">Monthly Cost</div></div>
+        </div>
+        {recs.map((rec,i)=>{
+          const cost=rec.estimated_monthly_cost||rec.estimated_cost_monthly||0;
+          const roi=rec.roi_score||0;
+          const improvement=rec.detection_improvement||0;
+          return(
+            <div key={rec.source_key||i} className="rec-card">
+              <div className="rec-rank">#{rec.priority_rank||i+1}</div>
+              <div>
+                <div className="flex items-center gap-8 mb-4">
+                  <span style={{fontFamily:'var(--font-mono)',fontSize:13,color:'#fff',fontWeight:600}}>{rec.source_name}</span>
+                  <Badge type="blue">{rec.category}</Badge>
+                  <Badge type={rec.setup_complexity==='high'?'broken':rec.setup_complexity==='medium'?'partial':'built'}>{rec.setup_complexity} setup</Badge>
+                </div>
+                <div style={{fontSize:12,color:'var(--muted)',marginBottom:10}}>{rec.description}</div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:12}}>
+                  {[{l:'Techniques Unlocked',v:rec.techniques_unlocked,c:'var(--built)'},{l:'Rules Activated',v:rec.rules_activated||rec.gaps_resolved,c:'var(--accent)'},{l:'Monthly Cost',v:`$${cost.toLocaleString()}`,c:'var(--partial)'},{l:'Annual Cost',v:`$${((rec.estimated_annual_cost||rec.estimated_cost_annually||cost*12)).toLocaleString()}`,c:'var(--muted)'}].map(m=>(
+                    <div key={m.l}><div style={{fontFamily:'var(--font-mono)',fontSize:16,fontWeight:600,color:m.c}}>{m.v}</div><div style={{fontSize:10,color:'var(--muted)',textTransform:'uppercase',letterSpacing:.5}}>{m.l}</div></div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-8 mb-4">
+                  <span style={{fontSize:10,color:'var(--muted)',fontFamily:'var(--font-mono)',width:70}}>ROI SCORE</span>
+                  <div className="roi-fill"><div className="roi-bar" style={{width:`${roi}%`}}/></div>
+                  <span style={{fontFamily:'var(--font-mono)',fontSize:12,color:roi>70?'var(--built)':'var(--partial)'}}>{roi}/100</span>
+                </div>
+                <div className="flex items-center gap-8">
+                  <span style={{fontSize:10,color:'var(--muted)',fontFamily:'var(--font-mono)',width:70}}>DET. GAIN</span>
+                  <div className="roi-fill"><div className="roi-bar" style={{width:`${improvement}%`,background:'linear-gradient(90deg,var(--accent2),var(--accent))'}}/></div>
+                  <span style={{fontFamily:'var(--font-mono)',fontSize:12,color:'var(--accent)'}}>{improvement}pts</span>
+                </div>
+                {rec.technique_ids?.length>0&&<div style={{marginTop:10}}>{rec.technique_ids.map(tid=><span key={tid} style={{fontFamily:'var(--font-mono)',fontSize:10,color:'var(--accent)',marginRight:8}}>{tid}</span>)}</div>}
+              </div>
+              <div className="flex-col gap-8">
+                <button className="btn btn-approve btn-sm">✓ APPROVE</button>
+                <button className="btn btn-ghost btn-sm">DEFER</button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── HITL Queue ────────────────────────────────────────────────
+function HITLQueue({clientId}){
+  const [decisions,setDecisions]=useState(null);
+  const [loading,setLoading]=useState(true);
+  useEffect(()=>{
+    api.get(`/api/decisions?client_id=${clientId}&pending_only=false`)
+      .then(d=>setDecisions(d))
+      .catch(()=>setDecisions([
+        {id:'d001',client_id:clientId,entity_type:'recommendation',title:'Approve: Ingest Network Flow',description:'network_flow resolves 7 rules across 6 critical techniques. Est. cost $4,320/month.',priority:10,action:null},
+        {id:'d002',client_id:clientId,entity_type:'gap',title:'Review: LSASS Coverage Illusion — Critical',description:'process_access source is offline. LSASS credential dumping undetectable despite rules deployed.',priority:5,action:null},
+        {id:'d003',client_id:clientId,entity_type:'recommendation',title:'Approve: PowerShell Script Block Logging',description:'$315/month closes T1059.001 coverage illusion. Highest ROI recommendation.',priority:15,action:null},
+      ]))
+      .finally(()=>setLoading(false));
+  },[clientId]);
+
+  const submit=async(id,action)=>{
+    try{await api.post(`/api/decisions/${id}`,{action,decided_by:'analyst@umbra-demo'});}catch(e){}
+    setDecisions(p=>p.map(d=>d.id===id?{...d,action}:d));
+  };
+
+  const pending=(decisions||[]).filter(d=>!d.action);
+  const resolved=(decisions||[]).filter(d=>d.action);
+  return(
+    <div>
+      <div className="page-header">
+        <div><div className="page-title">HITL DECISION QUEUE</div><div className="page-subtitle">Human-in-the-Loop — Approval, Rejection, Deferral, Escalation</div></div>
+        <span style={{fontFamily:'var(--font-mono)',fontSize:11,color:'var(--muted)'}}>{pending.length} PENDING</span>
+      </div>
+      <div className="page-body">
+        {loading&&<div className="flex items-center gap-12" style={{padding:'40px 0',justifyContent:'center'}}><Spinner/></div>}
+        {!loading&&pending.length===0&&resolved.length===0&&<div style={{textAlign:'center',padding:'48px',color:'var(--muted)',fontFamily:'var(--font-mono)'}}>NO DECISIONS FOR THIS CLIENT</div>}
+        {pending.map(d=>(
+          <div key={d.id} className="hitl-card">
+            <div className="flex items-start gap-12">
+              <div style={{width:3,background:d.priority<=10?'var(--critical)':d.priority<=20?'var(--high)':'var(--medium)',borderRadius:2,alignSelf:'stretch',minHeight:40}}/>
+              <div style={{flex:1}}>
+                <div className="flex items-center gap-8 mb-4">
+                  <Badge type={d.entity_type==='gap'?'broken':'blue'}>{d.entity_type}</Badge>
+                  <span style={{fontFamily:'var(--font-mono)',fontSize:12,color:'#fff',fontWeight:600}}>{d.title}</span>
+                </div>
+                <div style={{fontSize:12,color:'var(--muted)'}}>{d.description}</div>
+              </div>
+              <div className="flex gap-8">
+                <button className="btn btn-approve btn-sm" onClick={()=>submit(d.id,'approved')}>✓ APPROVE</button>
+                <button className="btn btn-ghost btn-sm" onClick={()=>submit(d.id,'deferred')}>DEFER</button>
+                <button className="btn btn-danger btn-sm" onClick={()=>submit(d.id,'rejected')}>✕ REJECT</button>
+              </div>
+            </div>
+          </div>
+        ))}
+        {resolved.length>0&&<>
+          <div className="section-title mt-20">Resolved</div>
+          {resolved.map(d=>(
+            <div key={d.id} className="hitl-card" style={{opacity:.5}}>
+              <div className="flex items-center gap-12">
+                <div style={{width:3,background:'var(--built)',borderRadius:2,minHeight:32,alignSelf:'stretch'}}/>
+                <div style={{flex:1}}><div className="flex items-center gap-8"><Badge type={d.action==='approved'?'built':d.action==='rejected'?'broken':'partial'}>{d.action}</Badge><span style={{fontSize:12}}>{d.title}</span></div></div>
+              </div>
+            </div>
+          ))}
+        </>}
+      </div>
+    </div>
+  );
+}
+
+// ── Integrations ──────────────────────────────────────────────
+function Integrations(){
+  const integrations=[
+    {name:'CrowdStrike Falcon',type:'EDR / XDR',status:'simulated',desc:'Process telemetry, network connections, module loads. MCP simulation active.',events:['edr_telemetry','process_creation','module_load']},
+    {name:'Google SecOps (Chronicle)',type:'SIEM',status:'simulated',desc:'Rule deployment, alert retrieval, detection status queries. SIGMA/YARA-L2 integration.',events:['rule_deployment','alert_stream']},
+    {name:'Supabase PostgreSQL',type:'Database',status:'connected',desc:'Production database. All coverage matrix, gaps, and client data persisted.',events:['coverage_matrix','gaps','recommendations']},
+    {name:'Microsoft Sentinel',type:'SIEM',status:'offline',desc:'KQL rule deployment, workspace queries. Connection not configured.',events:[]},
+    {name:'AWS CloudTrail',type:'Cloud Audit',status:'connected',desc:'Cloud control plane events flowing. IAM, S3, EC2 audit logs.',events:['cloud_audit_logs']},
+    {name:'Okta',type:'Identity',status:'connected',desc:'SSO authentication events, MFA logs, user lifecycle events.',events:['authentication_logs']},
+    {name:'HashiCorp Vault',type:'Secrets / IAM',status:'simulated',desc:'Secrets access audit log, token lifecycle, policy change events.',events:['vault_audit']},
+    {name:'Infoblox DNS',type:'Network',status:'offline',desc:'DNS query/response logs for C2 and tunnelling detection.',events:[]},
+  ];
+  return(
+    <div>
+      <div className="page-header"><div><div className="page-title">INTEGRATIONS</div><div className="page-subtitle">MCP-connected data sources and detection platforms</div></div></div>
+      <div className="page-body">
+        <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:12}}>
+          {integrations.map(i=>(
+            <div key={i.name} className="integration-card">
+              <div className="flex items-center justify-between">
+                <div><div style={{fontFamily:'var(--font-mono)',fontSize:13,fontWeight:600,color:'#fff'}}>{i.name}</div><div style={{fontSize:10,color:'var(--muted)',textTransform:'uppercase',letterSpacing:1,marginTop:2}}>{i.type}</div></div>
+                <div className="flex items-center gap-6">
+                  <div className={`status-dot ${i.status}`}/>
+                  <span style={{fontFamily:'var(--font-mono)',fontSize:10,textTransform:'uppercase',letterSpacing:1,color:i.status==='connected'?'var(--built)':i.status==='simulated'?'var(--partial)':'var(--muted)'}}>{i.status}</span>
+                </div>
+              </div>
+              <div style={{fontSize:11,color:'var(--muted)'}}>{i.desc}</div>
+              {i.events.length>0&&<div className="flex gap-4" style={{flexWrap:'wrap'}}>{i.events.map(e=><Badge key={e} type="blue">{e}</Badge>)}</div>}
+              <button className="btn btn-ghost btn-sm">{i.status==='connected'?'⚙ CONFIGURE':i.status==='simulated'?'✦ VIEW MCP':'+ CONNECT'}</button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── App Shell ─────────────────────────────────────────────────
+function App(){
+  const [page,setPage]=useState('dashboard');
+  const [clientId,setClientId]=useState(MOCK.clients[0].id);
+  const [clients,setClients]=useState(MOCK.clients);
+  const apiStatus=useApiStatus();
+
+  // Try to load real clients from API
+  useEffect(()=>{
+    api.get('/api/clients').then(c=>{if(c?.length)setClients(c);}).catch(()=>{});
+  },[]);
+
+  const clientTechs=MOCK.techniques[clientId]||[];
+  const summary=computeSummary(clientTechs);
+  const gapCount=(MOCK.gaps[clientId]||[]).length;
+  const nav=[
+    {id:'dashboard',label:'Dashboard',icon:'◈'},
+    {id:'matrix',label:'Coverage Matrix',icon:'▦'},
+    {id:'gaps',label:'Gap Explorer',icon:'△',badge:gapCount},
+    {id:'recommendations',label:'Log Ingestion',icon:'↑'},
+    {id:'hitl',label:'HITL Queue',icon:'⊡'},
+    {id:'integrations',label:'Integrations',icon:'⇄'},
+  ];
+  const renderPage=()=>{
+    const props={clientId,clients,apiStatus};
+    switch(page){
+      case 'dashboard':    return <Dashboard {...props}/>;
+      case 'matrix':       return <CoverageMatrix {...props}/>;
+      case 'gaps':         return <GapExplorer {...props}/>;
+      case 'recommendations': return <Recommendations {...props}/>;
+      case 'hitl':         return <HITLQueue {...props}/>;
+      case 'integrations': return <Integrations/>;
+      default:             return <Dashboard {...props}/>;
+    }
+  };
+  return(
+    <div className="app">
+      <div className="sidebar">
+        <div className="sidebar-logo">
+          <div className="logo-mark">UMBRA</div>
+          <div className="logo-sub">Detection Intelligence</div>
+        </div>
+        <div className="sidebar-client">
+          <div className="client-label">Active Client</div>
+          <select className="client-select" value={clientId} onChange={e=>setClientId(e.target.value)}>
+            {clients.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <div style={{marginTop:8,fontSize:9,color:'var(--muted)',fontFamily:'var(--font-mono)'}}>{summary.real_coverage_pct}% real | {summary.illusion_count} illusion{summary.illusion_count!==1?'s':''}</div>
+        </div>
+        <div className="nav-section">
+          <div className="nav-section-label">Platform</div>
+          {nav.map(n=>(
+            <div key={n.id} className={`nav-item ${page===n.id?'active':''}`} onClick={()=>setPage(n.id)}>
+              <span style={{width:14,textAlign:'center'}}>{n.icon}</span>
+              <span>{n.label}</span>
+              {n.badge>0&&<span className="nav-badge">{n.badge}</span>}
+            </div>
+          ))}
+        </div>
+        <div style={{marginTop:'auto',padding:'12px 16px',borderTop:'1px solid var(--border)'}}>
+          <div style={{fontSize:9,color:'var(--dim)',fontFamily:'var(--font-mono)',letterSpacing:1}}>
+            UMBRA v1.0.0<br/>MDR PLATFORM<br/>
+            <span style={{color:apiStatus==='online'?'var(--built)':apiStatus==='loading'?'var(--partial)':'var(--muted)'}}>{apiStatus==='online'?'● API CONNECTED':apiStatus==='loading'?'○ CONNECTING...':'○ DEMO MODE'}</span>
+          </div>
+        </div>
+      </div>
+      <div className="main">{renderPage()}</div>
+    </div>
+  );
+}
+
+ReactDOM.render(<App/>, document.getElementById('root'));
+</script>
+</body>
+</html>

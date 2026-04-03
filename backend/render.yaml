@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: umbra-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEMO_MODE
+        value: "true"
+      - key: DATABASE_URL
+        sync: false        # paste Supabase URL in Render dashboard
+      - key: ANTHROPIC_API_KEY
+        sync: false        # optional
+      - key: CORS_ORIGINS
+        sync: false        # paste your Vercel URL
+    healthCheckPath: /health
+    autoDeploy: true
