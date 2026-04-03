@@ -17,7 +17,6 @@ def safe_parse(text: str) -> Optional[Dict]:
         return json.loads(text)
     except Exception:
         try:
-            # attempt recovery
             start = text.find("{")
             end = text.rfind("}") + 1
             if start != -1 and end != -1:
@@ -52,7 +51,6 @@ async def generate_gap_reasoning(
     source_data: Dict,
 ) -> Optional[Dict]:
 
-    # ---- No API key → fallback ----
     if not settings.ANTHROPIC_API_KEY:
         return mock_reasoning(gap_data)
 
@@ -72,7 +70,7 @@ Format:
 Context:
 Client: {client_data.get("name")}
 Industry: {client_data.get("industry")}
-Technique: {technique_data.get("technique_id")}
+Technique: {gap_data.get("technique_id")}
 Gap Type: {gap_data.get("gap_type")}
 Missing Sources: {gap_data.get("missing_sources")}
 """
@@ -91,14 +89,22 @@ Missing Sources: {gap_data.get("missing_sources")}
                     "max_tokens": 800,
                     "temperature": 0.2,
                     "messages": [
-                        {"role": "user", "content": prompt}
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt}
+                            ]
+                        }
                     ],
                 },
             )
 
+        if response.status_code != 200:
+            logger.error(f"Claude API error: {response.status_code} {response.text}")
+            return mock_reasoning(gap_data)
+
         data = response.json()
 
-        # Extract Claude text
         text_output = data.get("content", [{}])[0].get("text", "")
 
         parsed = safe_parse(text_output)
