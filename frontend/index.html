@@ -316,7 +316,11 @@ function useClientData(clientId){
           const mappedTechs = techs.map(t=>({
             ...t, severity: t.priority_score>=85?'critical':t.priority_score>=70?'high':'medium'
           }));
-          setData({techniques:mappedTechs, gaps: gaps||[], recommendations:recs||[]});
+          setData({
+            techniques: mappedTechs,
+            gaps: (gaps && gaps.length > 0) ? gaps : (MOCK.gaps[clientId] || []),
+            recommendations: (recs && recs.length > 0) ? recs : (MOCK.recommendations[clientId] || []),
+          });
           setSource('api');
         } else {
           // API returned empty - use mock
