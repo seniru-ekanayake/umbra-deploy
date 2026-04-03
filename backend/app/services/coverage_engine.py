@@ -419,7 +419,7 @@ class CoverageEngine:
         recommendations = []
         for sk, impact in source_impact.items():
             monthly_cost = impact["cost_per_gb"] * impact["avg_daily_gb"] * 30
-            roi = (impact["total_priority"] / max(monthly_cost, 1)) * 10
+            roi = (float(impact.get("total_priority", 0)) / float(max(monthly_cost or 0, 1))) * 10
             recommendations.append({
                 "source_key": sk,
                 "source_name": impact["source_name"],
