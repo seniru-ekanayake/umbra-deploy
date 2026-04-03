@@ -51,6 +51,7 @@ async def generate_gap_reasoning(
     source_data: Dict,
 ) -> Optional[Dict]:
 
+    # No API key → fallback
     if not settings.ANTHROPIC_API_KEY:
         return mock_reasoning(gap_data)
 
@@ -82,7 +83,6 @@ Missing Sources: {gap_data.get("missing_sources")}
                 headers={
                     "x-api-key": settings.ANTHROPIC_API_KEY,
                     "anthropic-version": "2023-06-01",
-                    "content-type": "application/json",
                 },
                 json={
                     "model": "claude-3-haiku-20240307",
@@ -99,6 +99,7 @@ Missing Sources: {gap_data.get("missing_sources")}
                 },
             )
 
+        # Handle API errors cleanly
         if response.status_code != 200:
             logger.error(f"Claude API error: {response.status_code} {response.text}")
             return mock_reasoning(gap_data)
