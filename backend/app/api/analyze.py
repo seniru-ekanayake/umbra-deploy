@@ -50,8 +50,12 @@ async def trigger_all_demo_clients(
         try:
             async with __import__("app.db.session", fromlist=["AsyncSessionLocal"]).AsyncSessionLocal() as session:
                 r = await run_client_analysis(session, str(client["id"]))
-                results.append({"client": client["name"], "status": "ok",
-                                 "gaps": r["gaps_count"], "recs": r["recommendations_count"]})
+                results.append({
+                    "client": client["name"],
+                    "status": "ok",
+                    "gaps": r.get("gaps_count", r.get("gaps", 0)),
+                    "recs": r.get("recommendations_count", r.get("recommendations", 0))
+                })
         except Exception as e:
             logger.error(f"Failed for {client['name']}: {e}")
             results.append({"client": client["name"], "status": "error", "error": str(e)})
