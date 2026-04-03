@@ -260,8 +260,8 @@ async def _persist_gaps(db, client_id, gaps, techniques):
             "cid": client_id, "tid": tid, "gt": g["gap_type"],
             "sev": g["severity"], "title": title,
             "desc": g.get("gap_description", ""),
-            "ar": g.get("illusion_rules", []),
-            "ms": g.get("missing_sources", []),
+            "ar": g.get("illusion_rules") or [],
+            "ms": g.get("missing_sources") or [],
             "ps": g["priority_score"],
         })
 
