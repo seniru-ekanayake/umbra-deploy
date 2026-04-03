@@ -85,7 +85,7 @@ Missing Sources: {gap_data.get("missing_sources")}
                     "anthropic-version": "2023-06-01",
                 },
                 json={
-                    "model": "claude-3-haiku-20240307",
+                    "model": "claude-3-haiku-20241022",
                     "max_tokens": 800,
                     "temperature": 0.2,
                     "messages": [
