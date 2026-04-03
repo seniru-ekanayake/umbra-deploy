@@ -213,8 +213,8 @@ async def _persist_coverage_matrix(db, client_id, results: List[CoverageResult])
                source_present,rule_deployed,rule_healthy,
                hard_deps_met,soft_deps_met,coverage_illusion,illusion_reason,computed_at)
             VALUES
-              (:cid,:tid,:rid,:sid,:state,
-               :sp,:rd,:rh,:hd,:sd,:ci,:ir,NOW())
+              (:cid,:tid,:gt,:sev,:title,:desc,
+               CAST(:ar AS text[]),CAST(:ms AS text[]),:ps,NOW(),NOW())
             ON CONFLICT (client_id,technique_id,rule_id,source_id)
             DO UPDATE SET
               coverage_state=EXCLUDED.coverage_state,
@@ -282,7 +282,7 @@ async def _persist_recommendations(db, client_id, recs, all_sources):
                roi_score,priority_rank)
             VALUES
               (:cid,'ingest_source',:title,:desc,:sid,
-               :tids,:tu,:ra,:di,:cm,:ca,:roi,:rank)
+               CAST(:tids AS text[]),:tu,:ra,:di,:cm,:ca,:roi,:rank)
             ON CONFLICT DO NOTHING
         """), {
             "cid": client_id,
