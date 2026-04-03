@@ -183,7 +183,7 @@ async def _load_all_sources(db) -> Dict[str, Dict]:
                cost_per_gb, avg_daily_gb, setup_complexity
         FROM log_sources
     """))
-    return {row["source_key"]: dict(row._mapping)
+    return {row["source_key"]: row
             for row in (dict(r._mapping) for r in r.fetchall())}
 
 
@@ -191,7 +191,7 @@ async def _load_deployments(db, client_id) -> Dict[str, Dict]:
     r = await db.execute(text("""
         SELECT rule_id, status, health FROM rule_deployments WHERE client_id = :cid
     """), {"cid": client_id})
-    return {row["rule_id"]: dict(row._mapping)
+    return {row["rule_id"]: row
             for row in (dict(r._mapping) for r in r.fetchall())}
 
 
@@ -199,7 +199,7 @@ async def _load_techniques(db) -> Dict[str, Dict]:
     r = await db.execute(text("""
         SELECT technique_id, name, tactic, parent_id, description FROM mitre_techniques
     """))
-    return {row["technique_id"]: dict(row._mapping)
+    return {row["technique_id"]: row
             for row in (dict(r._mapping) for r in r.fetchall())}
 
 
