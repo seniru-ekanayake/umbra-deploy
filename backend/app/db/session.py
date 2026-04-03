@@ -19,11 +19,12 @@ engine = create_async_engine(
     echo=False,
     pool_size=3,
     max_overflow=5,
-    pool_pre_ping=True,          # handles cold reconnects
-    pool_recycle=300,            # recycle after 5 min idle (Render sleeps)
+    pool_pre_ping=True,
+    pool_recycle=300,
     connect_args={
         "server_settings": {"application_name": "umbra-demo"},
         "command_timeout": 30,
+        "statement_cache_size": 0,   # ← ADD THIS LINE
     },
 )
 
