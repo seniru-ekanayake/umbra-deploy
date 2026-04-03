@@ -13,7 +13,7 @@ from app.core.config import settings
 logger = logging.getLogger("umbra.reasoning")
 
 SYSTEM_PROMPT = """You are a senior detection engineer at an MDR provider.
-Analyse a specific detection gap and respond ONLY with a JSON object — no preamble, no markdown fences.
+You MUST return valid JSON. Do not include explanations. No markdown. No backticks.
 
 Rules:
 - Reference the SPECIFIC technique, missing sources, and client industry
