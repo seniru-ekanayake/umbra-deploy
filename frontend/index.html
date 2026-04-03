@@ -307,7 +307,7 @@ function useClientData(clientId){
     const load=async()=>{
       try{
         const [techs,gaps,recs]=await Promise.all([
-          api.get(`/api/coverage?client_id=${clientId}`),
+          api.get(`/api/coverage/matrix?client_id=${clientId}`),
           api.get(`/api/gaps?client_id=${clientId}`),
           api.get(`/api/recommendations?client_id=${clientId}`),
         ]);
