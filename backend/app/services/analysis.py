@@ -288,7 +288,7 @@ async def _persist_recommendations(db, client_id, recs, all_sources):
             "cid": client_id,
             "title": f"Ingest: {rec['source_name']}",
             "desc": f"Unlocks {rec['techniques_unlocked']} techniques. ROI: {rec['roi_score']}",
-            "sid": src_id, "tids": rec["technique_ids"],
+            "sid": src_id, "tids": rec.get("technique_ids") or [],
             "tu": rec["techniques_unlocked"], "ra": rec["gaps_resolved"],
             "di": rec["detection_improvement"],
             "cm": rec["estimated_monthly_cost"], "ca": rec["estimated_annual_cost"],
